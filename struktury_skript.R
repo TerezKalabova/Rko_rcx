@@ -109,6 +109,7 @@ for (cis in 1:nrow(NKB)) {
 names(NK2)<-NKB$kod_ciselniku
 #ok
 
+#je to fakt moc pekny
 
 
 # struktura 3 : kod_ciselniku | popis otazky
