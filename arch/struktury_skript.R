@@ -46,16 +46,6 @@ names(NK1)<-unique(NKA$kod_ciselniku) #pojmenovani listuu v listu listuu podle k
 
 
 
-
-
-
-
-
-
-
-
-#=============================================================================================================
-
 # struktura 2 :  kody K k jedne otazce
 # --> List listu, v kazdem listu je seznam otazek a kodu dotazniku vytazenych z kodu K.
 #       Struktura v listech: "kod_otazky | kod_dotazniku". 
@@ -66,14 +56,11 @@ skala_cisla<-seq(1,49)
 skala_rim<-tolower(as.roman(skala_cisla))
 skala_pis<-letters[1:26]
 prvky_skal<-c(skala_cisla, skala_rim, skala_pis)
-typy_skal<-c(rep("cisla",49), rep("rim", 49), rep("pis", 26))
 
 #sjednoceni mezer:
 NKB$kody_K<-gsub("[[:space:]]", " ", NKB$kody_K)
 NKB$kody_K<-gsub("\xc2\xa0", " ", NKB$kody_K)
-NKB$kody_K<-gsub("–", "-", NKB$kody_K) #nahrazeni spojovniku pomlckou
 NKB$kody_K<-gsub("- v v ", "-v v ", NKB$kody_K) #odebrani mezery v retezci "- v v "
-
 
 
 for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
@@ -81,23 +68,18 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
   kody_K<-as.vector(NKB$kody_K[cis]) #jeden radek vsech kodu K
   K_po_dotaznicich<-unlist(strsplit(kody_K, ", ")) #rozdeleni K kodu do retezcu po dotaznicich podle ", "
   
-  otazky<-dotazniky<-otazkyDB<-c() #vysledne otazky jednoho ciselniku a 1 kodu_K, vkladaji se do 1 listu s nazvem ciselniku
+  otazky<-dotazniky<-otazkyDB<-c()
   for (dot in 1: length(K_po_dotaznicich) ) { #prace po retezcich z kodu K
     ret<-gsub(" ", "", unlist(strsplit(K_po_dotaznicich[dot], " v "))) #rozdeleni K kodu na otazku a dotaznik podle " v "
     OTAZKA<-ret[1]
     DOTAZNIK<-ret[2]
     
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # OTAZKA
-    
     #cast retezce "OTAZKA":
     if (!grepl("-",OTAZKA) && !grepl(",",OTAZKA) ) { #pokud v otazce nejsou zadne pomlcky ani carky, a tedy vice moznosti, je pripravena pro dalsi zpracovani.
       #v poradku, pokracujem
-      OTAZKA<- OTAZKA #tohle tu je navic, ale nechci nechat prazdny if, protoze to pak hazi chybu
-    } else if (is.na(OTAZKA)) { #prazdny retezec
-      OTAZKA<-"chybejici_kod_otazky"  
+      ot_ret<- OTAZKA #prac.retezec pro vlozeni do fin
       
-    } else if (grepl(",",OTAZKA)) { #zmnozena otazka na 1 dotaznik / pokud jsou v otazce carky, otazka se rozdeli do vice podotazek
+    } else if (grepl(",",OTAZKA) { #zmnozena otazka na dotaznik / pokud jsou v otazce carky, otazka se rozdeli do vice podotazek
       podot<-unlist(strsplit(OTAZKA, ",")) 
       #kontrola spojeni osamocenych moznosti typu "i,ii", "g,h", "1,2"
       if (length (which (match (podot, prvky_skal) >0) ) >0) {
@@ -112,89 +94,72 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
       }
       OTAZKA<-podot
       
-    } else if (any(grepl("-",OTAZKA))) { #v otazce je pomlcka. otazka muze obsahovat jeden i vice prvku vektoru 
-        #cvicna OTAZKA: OTAZKA<-c("S1a3-5" ,  " S2f" ,    " D2e5s"  , "E1di-iii", " A1dg" ,   " A1dh",    " S5d7ii",  " S5d7iii")
-        podot<-OTAZKA
-        for (j in 1 : length(which (grepl("-",OTAZKA))) ) {
-          ot_pomlcka_ind = rev(which(grepl("-",OTAZKA))) #vektor poradi otazek s pomlckou ve vektoru OTAZKA
+    } else if (grepl("-",OTAZKA)) { #v otazce je pomlcka. otazka muze obsahovat jeden i vice prvku vektoru
+        for (j in 1 : length(which (grepl("-",OTAZKA)) )) {
+          #ot_pomlcka_ind=which(grepl("-",OTAZKA)) #vektor poradi otazek s pomlckou ve vektoru OTAZKA
           zackon<-unlist(strsplit(OTAZKA[ot_pomlcka_ind[j]], "-"))
           posledni_znaky_ot<-c(str_sub(zackon[1], -1,-1), str_sub(zackon[1], -2,-1), str_sub(zackon[1], -3,-1))
           pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
-          
           zaklad_ot<-str_sub(zackon[1], 1, -(pocet_zn_odriznuti+1)) 
           prvni_moznost<-str_sub(zackon[1], -1, -(pocet_zn_odriznuti)) 
           posl_moznost<-zackon[2] 
-          
-          #odchyceni spatneho deleni skaly kvuli chybe v priprave K_kodu
-          if (!any(posl_moznost==prvky_skal)) {
-            otazky_moznosti<- "chyba_v_priprave_K_kodu"
-          } else { #kdyz je posl_moznost validni, pokracuju dal 
-              #urceni skaly moznosti -- vybrana skala ulozena v promenne "skala"
-              typy_zackon<-typy_skal[c(which(prvni_moznost==prvky_skal), which(posl_moznost==prvky_skal))]
-              if (any(typy_zackon=="cisla")) {
-                skala<-skala_cisla
-              }else if ((length(typy_zackon)<=3) &&  length(which(typy_zackon=="pis"))==2 ) {
-                skala<-skala_pis
-              }else {
-                skala<-skala_rim
-              }
-              #vytvoreni moznosti ktere se budou pripojovat k zakladu otazky
-              moznosti<-skala[which(prvni_moznost==skala) : which(posl_moznost==skala)]
-              otazky_moznosti<-paste(zaklad_ot, moznosti, sep="")
-          }
-          #vlozeni namnozenych otazek do podot, jez zastupuje ve for cyklu puvodni retezec OTAZKA
-          puv_podot_zac<-podot[-c(ot_pomlcka_ind[j] : length(podot))]
-          puv_podot_kon<-podot[-c(0 : ot_pomlcka_ind[j])]
-          podot<-c(puv_podot_zac, otazky_moznosti, puv_podot_kon)
-        } #for j /namnozeni jedne pomlcky v kazdem cyklu
-        OTAZKA<-podot
-
-    } else {
-      OTAZKA<-paste("neznama_chyba_otazka: ", OTAZKA, sep="")
+          #urceni skaly moznosti
+          typ_zac<-which(prvni_moznost==prvky_skal) #1-49 cis, 50-98 rim, 99-124 pis
+          typ_kon<-which(posl_moznost==prvky_skal)
+          if (length(typ_zac)==1) {
+            skala<-skala_cisla
+          } else if 
+           
+           ## TODO: vyresit jak nastavit skalu pro moznosti 
+        }
+                                  
+                     
+                     
     }
     
-    #promenna OTAZKA je pripravena k parovani s dotaznikem. prozatim vse ok. 3.6.2015
     
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # DOTAZNIK
+    #S1a, S2f, D2e5s,E1di-iii, A1dg,h
+
     
-    #cast retezce DOTAZNIK:
-    if (!grepl("[[:punct:]]", gsub("/","",DOTAZNIK)) ) { #pokud v otazce nejsou zadne znaky !"#$%&'()*+,-.:;<=>?@[]^_`{|}~., a tedy nic sloziteho ale ocekavam ze jde pouze jediny dotaznik, ten je pripraven pro dalsi zpracovani. NOsetreno i pro dotaznik s lomitkem.
-        #v poradku, pokracujem
-        DOTAZNIK<-DOTAZNIK  #je to tu navic, ale nechtela jsem nechat telo cyklu prazdne.
-    } else if (is.na(DOTAZNIK)) { #chyba: prazdny retezec
-        DOTAZNIK<-"chybejici_kod_dotaznikuNA"
-    } else if (grepl("-,",DOTAZNIK))  { #chyba: v dotazniku je pomlcka
-        DOTAZNIK<-"chyba_kodovani_dotazniku-"
-    } else if (nchar(DOTAZNIK)<2)  { #chyba: kod dotazniky nema alespon dva znaky
-      DOTAZNIK<-"chyba_kodovani_dotazniku"
+    
+    
+    if (!grepl("-",ret[1]) && !is.na(ret[2]) && !grepl(",",ret[1]) && !grepl(",",ret[2]) ) { #pokud v otazce nejsou zadne pomlcky ani carky} ani v dotazniku, a tedy vice moznosti, vlozi se radek do vektoru pro pridani do list_K
+      #v poradku, pokracujem
+      otazka<- ret[1]
+      dotaznik<- ret[2]
+      otazkaDB<- paste(ret[2],"_",ret[1], sep="")
       
-    } else if (grepl(",",DOTAZNIK)) { #v retezci dotazniku je carka -- vice dotazniku patri k otazce
-        DOTAZNIK<-unlist(strsplit(DOTAZNIK, ",")) 
-    } else {
-        DOTAZNIK<-paste("neznama_chyba_dotaznik: ", DOTAZNIK, sep="")
+    } else if (is.na(ret[2])){ #samotny kod dotazniku - doplnit otazku z predchozi otazky
+      #otazka zustava z minuleho behu cyklu
+      dotaznik<-rep(ret[1], length(otazka))
+      otazkaDB<-paste(dotaznik,"_",otazka, sep="")
+    } else if ( (grepl("1-",ret[1]) || grepl("i-", ret[1]) || grepl("a-", ret[1]) ) && grep("-",ret[1])==1) { #pokud otazka pobsahuje prave jednu pomlcku, a tedy jedno cleneni na vice moznosti, pak se moznosti rozdeli do vice otazek a vlozi do vektoru
+        moznosti<-unlist(strsplit(ret[1], "-"))
+            zaklad_otazky=substr(moznosti[1], start=1, stop=nchar(moznosti[1])-1)
+            prvni_moznost=stri_sub(moznosti[1], -1, length=1)
+            posledni_moznost=moznosti[2]
+        
+            if (prvni_moznost == 1) { skala<-skala_cisla #deleni podle typu skaly moznosti
+            } else if (prvni_moznost == "i") { skala<-skala_rim
+            } else if (prvni_moznost == "a") { skala<-skala_pis
+            }
+            otazka<-dotaznik<-otazkaDB<-c()
+            for (moz in 1 : which(skala == posledni_moznost)) { #rozdelovani otazky s vice pozmosti do vice samostatnych otazek vc ukladani do vektoru
+              otazka<- c(otazka,paste(zaklad_otazky,skala[moz], sep=""))
+              dotaznik<- c(dotaznik, ret[2])
+              otazkaDB<- c(otazkaDB, paste(ret[2],"_",paste(zaklad_otazky,skala[moz], sep=""), sep=""))
+            } #for moz
+    } else{
+      otazka<- ret[1]
+      dotaznik<- ret[2]
+      otazkaDB<- "chyba_v_kodovani_K_kodu"
     }
-    
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # dokonceni uprav jednoho retezce OTAZKA-DOTAZNIK a jeho ulozeni
-    
-    # kombinovani dotazniku a otazek -- kartezsky soucin poctu dotazniku v DOTAZNIK a poctu otazek v OTAZKA
-    komb_OTAZKA<-rep(OTAZKA, each=length(DOTAZNIK))
-    komb_DOTAZNIK<-rep(DOTAZNIK, length(OTAZKA))
-    
-    #vytvoreni vektoru ve tvaru z DB: DOTAZNIK_OTAZKA
-    #komb_DOTAZNIK_OTAZKA <-paste(komb_DOTAZNIK, komb_OTAZKA, sep="_")
-    
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # vkladani otazek, dotazniku a otazekDB do listu za 1 zpracovany retezec OTAZKA-DOTAZNIK
 
-    otazky<-c(otazky,komb_OTAZKA)
-    dotazniky<-c(dotazniky, komb_DOTAZNIK)
-    #otazkyDB<-c(otazkyDB,komb_DOTAZNIK_OTAZKA)
-  }#for dot K_po_dotaznicich (retezcich)
-  
-  otazkyDB<-paste(dotazniky, otazky,  sep="_")
-  
+    otazky<-c(otazky,otazka)
+    dotazniky<-c(dotazniky, dotaznik)
+    otazkyDB<-c(otazkyDB,otazkaDB)
+  }#for dot K_po_dotaznicich
+ 
   list_K<-as.data.frame(cbind(otazky, dotazniky, otazkyDB))
   NK2[[cis]]<-list_K
 }#for cis NK2
