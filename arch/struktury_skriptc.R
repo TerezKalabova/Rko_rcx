@@ -5,7 +5,7 @@ rm(list=ls())
 
 ## change the working directory
 getwd()
-setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/shell")
+setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/awk")
 
 #knihovny ---------------------------------------------------------------------------------------
 
@@ -16,16 +16,12 @@ library(stringr)
 # nacteni dat z AWK =============================================================================
 
 # struktura A: kod v ciselniku | popis odpovedi |  kod otazky ||
-NKall <- read.table('NKall.txt', header=FALSE, sep=";")
-names(NKall) <- c("znacka", "kod", "popis") 
-
-# struktura A: kod v ciselniku | popis odpovedi |  kod otazky ||
 NKA <- read.csv('NKA.csv', header=FALSE, sep=";")
 names(NKA) <- c("id_odpovedi_neuniq", "popis_odpovedi", "kod_ciselniku") 
 
 # struktura B: kod otazky | popis otazky | kody K
 NKB <- read.table("NKB3.txt", header=FALSE, sep=";")
-names(NKB) <- c("kod_ciselniku", "popis_ciselniku", "kody_K")
+names(NKB) <- c("kod_ciselniku", "popis_otazky", "kody_K")
 arch.NKB<-NKB #zaloha pro jistotu. Znovunahrani: NKB<-arch.NKB
 
 #vsechny dotazniky / zkusebni podmnozina # TODO
@@ -98,7 +94,7 @@ NKB$kody_K<-gsub(" ", " ", NKB$kody_K)                        #nahrazeni vsech t
 NKB$kody_K<-gsub("_", " ", NKB$kody_K)                        #nahrazeni podtrzitka jednotnou mezerou
 NKB$kody_K<-gsub("v", " v ", NKB$kody_K)                      #vlozeni mezer kolem vsech "v"
 NKB$kody_K<-gsub("v i", "vi", NKB$kody_K)                     #odebrani mezery u "v" v rim. cisle
-NKB$kody_K<-gsub("x v v", "xv v", NKB$kody_K) 
+NKB$kody_K<-gsub("x v", "xv", NKB$kody_K) 
 NKB$kody_K<-gsub("v 1", "v1", NKB$kody_K)                     #odebrani mezery u "v" pred cislem
 NKB$kody_K<-gsub("v 2", "v2", NKB$kody_K)         
 NKB$kody_K<-gsub("v 3", "v3", NKB$kody_K)                     
@@ -368,72 +364,13 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
 names(NK2)<-NKB$kod_ciselniku
 #ok
 
-match(NK1[[1]][,1:2],NK1[[1]][,1:2])
+
 
 
 # struktura 3 : kod_ciselniku | popis otazky
 NK3 <- NKB[,1:2]
 #ok
 
-#============================================================================
-# NK1
-#  priprava NK1[[]] z NKall (vynecham zcela krok NKA) 
-
-#vytvoreni podadresare kam se budou ukladat generovane ciselniky
-mainDir <- getwd()
-subDir <- "extrahovane_ciselniky"
-if (file.exists(subDir)){
-  setwd(file.path(mainDir, subDir))
-} else {
-  dir.create(file.path(mainDir, subDir))
-  setwd(file.path(mainDir, subDir))
-}
-#smazat obsah podadreare subdir
-do.call(file.remove,list(list.files()))
-#opetovne nastaveni puvodniho pracovniho adresare
-setwd(mainDir)
-
-
-# iniciace vysledne struktury -- NK2
-NK1<-assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
-#uprava hlavicek v NKall
-zaloha_jmen_NKall<-names(NKall)
-names(NKall)<-c("znacka", "kod_odpovedi", "popis_odpovedi") 
-
-#vektor zacatkuu a koncuu cisleniku (zacatky: neni to Z ale NK, a tedy NK=Z-2)
-NKcis=which(NKall=="NK")
-ZKcis=which(NKall=="ZK")
-
-for (cis in 1 : sum(NKall=="NK") ) {
-  #priprava 1 ciselniku
-    jeden_ciselnik<-c()
-    jeden_ciselnik<-NKall[(NKcis[cis]+2) : (ZKcis[cis]), 2:3]
-    kod_ciselniku<- as.character(NKall[NKcis[cis],2])
-
-  #ulozeni ciselniku do listu
-  NK1[[cis]]<-jeden_ciselnik
-  names(NK1)[cis]<-kod_ciselniku
-  
-  #ulozeni ciselniku do txt v podslozce ciselniky
-  write.table(jeden_ciselnik, file = paste("./extrahovane_ciselniky/", kod_ciselniku, ".txt", sep = ""), sep=";", col.names = T, row.names=F, qmethod = "double")
-}
-names(NKall)<-zaloha_jmen_NKall
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#----------------------------------------------------------
 
 
