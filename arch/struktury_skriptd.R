@@ -7,185 +7,78 @@ rm(list=ls())
 getwd()
 setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/shell")
 
-# knihovny ---------------------------------------------------------------------------------------
+#knihovny ---------------------------------------------------------------------------------------
 
 library(stringi)
 library(stringr)
 
 
-# -----------------------------------------------------------------------------------------------
-# nacteni dat (z AWK) =============================================================================
-# -----------------------------------------------------------------------------------------------
+# nacteni dat z AWK =============================================================================
 
-# NKall
-# hlavicky: znacka | kod |  popis ||
-# vstupni soubor: NKall.txt
-#-----
+# struktura A: kod v ciselniku | popis odpovedi |  kod otazky ||
 NKall <- read.table('NKall.txt', header=FALSE, sep=";")
 names(NKall) <- c("znacka", "kod", "popis") 
 
+# struktura A: kod v ciselniku | popis odpovedi |  kod otazky ||
+NKA <- read.csv('NKA.csv', header=FALSE, sep=";")
+names(NKA) <- c("id_odpovedi_neuniq", "popis_odpovedi", "kod_ciselniku") 
 
-# NKB
-# hlavicky: kod ciselniku | popis ciselniku | kody K ||
-#vstupni soubor: NKB.txt
-#-----
+# struktura B: kod otazky | popis otazky | kody K
 NKB <- read.table("NKB3.txt", header=FALSE, sep=";")
 names(NKB) <- c("kod_ciselniku", "popis_ciselniku", "kody_K")
-# inic uprava vstupnich dat NKB
 arch.NKB<-NKB #zaloha pro jistotu. Znovunahrani: NKB<-arch.NKB
+
+#vsechny dotazniky / zkusebni podmnozina # TODO
+seznam_dotazniku<-c("P1", "P2", "P3", "N1", "N3", "N4", "N5", "PN6/1", "PN6/2", "PN6/3", "PN8", "PN18/1", "PN18/2", "PN18/3", "PN18/4", "T1", "T2", "T3", "T4", "T5",  "F1", "F2", "F3", "F4", "F5", "S1", "S2", "S3", "S4", "S5", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "Th4", "Ft1", "Ft2", "Ft3", "Ft4", "Ft5", "Ft6", "Ft7", "Ft8", "Et2", "Et4", "Et5", "Et6", "Et7", "Et8", "Et9", "V18", "Nt1", "Nt2", "Nt3", "Nt4", "Nt5", "Nt6", "Nt8", "Nt9", "V19", "U8", "U11", "U13", "U15", "U18", "V8", "V11", "V13", "V15", "FSS", "FSS8", "FSS11", "FSS13", "FSS15", "FSS17", "FSS19")
+
+
+#------------------------------------------------------------------------------------------------
+# uprava nactenych dat pro dalsi zpracovani
+
 # odstraneni radku, kde neni _NK kod v prvnim poli
 radky_NKB_bez_NK<-rev(which(!grepl("_NK",NKB$kod_ciselniku)))
 if (length(radky_NKB_bez_NK)>0) {
   NKB<- NKB[-c(radky_NKB_bez_NK),]
 }
 #ok
+  
 
+# ==============================================================================================
 
-# seznam_dotazniku 
-# (vektor)
-# arch: seznam_dotazniku<-c("P1", "P2", "P3", "N1", "N3", "N4", "N5", "PN6/1", "PN6/2", "PN6/3", "PN8", "PN18/1", "PN18/2", "PN18/3", "PN18/4", "T1", "T2", "T3", "T4", "T5",  "F1", "F2", "F3", "F4", "F5", "S1", "S2", "S3", "S4", "S5", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "Th4", "Ft1", "Ft2", "Ft3", "Ft4", "Ft5", "Ft6", "Ft7", "Ft8", "Et2", "Et4", "Et5", "Et6", "Et7", "Et8", "Et9", "V18", "Nt1", "Nt2", "Nt3", "Nt4", "Nt5", "Nt6", "Nt8", "Nt9", "V19", "U8", "U11", "U13", "U15", "U18", "V8", "V11", "V13", "V15", "FSS", "FSS8", "FSS11", "FSS13", "FSS15", "FSS17", "FSS19")
-# vstupni soubor: seznam_dotazniku.txt
-#-----
-seznam_dotazniku <- as.vector(unlist(read.table('seznam_dotazniku.txt', header=TRUE, sep=";")))
+# struktura 1 : jeden ciselnik i s hlavickou
+# --> List listu, v kazdem listu je jeden ciselnik.
+#       Struktura v listech: "id_odpovedi_neuniq" | "popis_odpovedi" | "kod_ciselniku". 
+#       Kod_ciselniku je take nazvem listu.
 
-
-
-
-
-# -----------------------------------------------------------------------------------------------
-# vypocty =======================================================================================
-# -----------------------------------------------------------------------------------------------
-
-#obsah skriptu:
-# NK3 - seznam kodu ciselniku a jejich nazvu
-# NK1 - list listuu jednotlivych ciselnikuu
-# NK4 - list zcela shodnych ciselniku
-# NK2 - list listuu, v kazdem listu je seznam otazek a kodu dotazniku vytazenych z kodu K.
-
-
-
-
-
-
-
-
-
-#============================================================================
-# NK3 
-# seznam kodu ciselniku a jejich nazvu
-#
-# hlavicky: kod_ciselniku | popis ciselniku
-# vstup: NKB
-# vystup: NK3
-#-----
-
-NK3 <- NKB[,1:2]
-#ok NK3
-
-
-
-
-#============================================================================
-# NK1 
-# list listuu jednotlivych ciselnikuu
-#
-# uklada jednotlive ciselniky do listu a do txt souboru v podslozce extrahovane ciselniky
-# priprava NK1[[]] z NKall (vynecham zcela krok NKA) 
-#
-# hlavicky velkeho listu: ~~nazvy ciselniku
-# hlavicky podlistuu: kod_odpovedi | popis_odpovedi ||
-# vstup: NKall
-# vystup: NK1 (list listu)
-#-----
-
-#vytvoreni podadresare kam se budou ukladat generovane ciselniky
-mainDir <- getwd()
-subDir <- "extrahovane_ciselniky"
-if (file.exists(subDir)){
-  setwd(file.path(mainDir, subDir))
-} else {
-  dir.create(file.path(mainDir, subDir))
-  setwd(file.path(mainDir, subDir))
-}
-#opetovne nastaveni puvodniho pracovniho adresare
-setwd(mainDir)
-
-
-# iniciace vysledne struktury -- NK2
 NK1<-assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
-#uprava hlavicek v NKall
-zaloha_jmen_NKall<-names(NKall)
-names(NKall)<-c("znacka", "kod_odpovedi", "popis_odpovedi") 
+for (cis in 1: length(unique(NKA$kod_ciselniku)) ) {
+  ciselnik<-as.vector(unique(NKA$kod_ciselniku))[cis] #nazev ciselniku ulozen do promenne "ciselnik"
+  jeden_ciselnik<-NKA[which(NKA$kod_ciselniku==ciselnik),] #obsah jednoho ciselniku vlozen do listu jeden_ciselnik
+  NK1[[cis]]<-jeden_ciselnik #vlozeni listu jeden_ciselnik do listu listuu - NK1
+}#for cis NK1
+names(NK1)<-unique(NKA$kod_ciselniku) #pojmenovani listuu v listu listuu podle kod_ciselniku
+#ok
 
-#vektor zacatkuu a koncuu cisleniku (zacatky: neni to Z ale NK, a tedy NK=Z-2)
-NKcis=which(NKall=="NK")
-ZKcis=which(NKall=="ZK")
-
-for (cis in 1 : sum(NKall=="NK") ) {
-  #priprava 1 ciselniku
-  jeden_ciselnik<-c()
-  jeden_ciselnik<-NKall[(NKcis[cis]+2) : (ZKcis[cis]), 2:3]
-  kod_ciselniku<- as.character(NKall[NKcis[cis],2])
-  
-  #ulozeni ciselniku do listu
-  NK1[[cis]]<-jeden_ciselnik
-  names(NK1)[cis]<-kod_ciselniku
-  
-  #ulozeni ciselniku do txt v podslozce ciselniky
-  write.table(jeden_ciselnik, file = paste("./extrahovane_ciselniky/", kod_ciselniku, ".txt", sep = ""), sep=";", col.names = T, row.names=F, qmethod = "double")
-}
-names(NKall)<-zaloha_jmen_NKall
-#ok NK1
+#vypis zacatku jednoho ciselniku pomoci jeho kodu nebo poradi v listech
+#head(NK1[["S1_NK12"]]) 
+#head(NK1[[10]])
 
 
 
-#============================================================================
-# NK4 
-# seznam zcela shodnych ciselniku
 
-# pokud neni zadny shodny ciselnik k hledanemu ciselniku, pak NK4[[cis]] je  nula.
-#
-# hlavicky listu: ~~nazvy ciselniku
-# vstup: NK1
-# vystup: NK4 (list vektoru)
-#-----
 
-NK4vse<-list() #assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
 
-for (cis in 1:length(NK1)) {
-  list_cis<-0
-  for (listy in 1:length(NK1)) {
-    if (cis!=listy && all (!is.na (match(NK1[[cis]][,2], NK1[[listy]][,2]))) ) {
-      list_cis <- c(list_cis, names(NK1)[listy])
-    }
-  }
-  NK4vse[[cis]] <-list_cis 
-  
-}
-names(NK4vse)<-names(NK1)
 
-#---
-#vyber jen ciselniku s vyskytem alespon 1 dalsiho zcela shodneho ciselniku
-#lapply(NK4, function(x) if (match(x,0)==1) {x<-5})
-NK4<-NK4vse
-for (cis in 1:length(NK4vse)) {
-  if (all(NK4[[(length(NK4vse))-cis+1]]==0)) {
-    NK4[[(length(NK4vse))-cis+1]]<-NULL
-  }
-}
-#ok NK4
+
 
 
 
 #=============================================================================================================
-# NK2
-# list listuu, v kazdem listu je seznam otazek a kodu dotazniku vytazenych z kodu K.
-#
-# hlavicky ve velkem listu: ~~nazvy cislenikuu
-# hlavicky v podlistech: otazky | dotazniky | otazkyDB". 
-# vstup: NKB, seznam_dotazniku
-# vystup: NK2
-#-----
+
+# struktura 2 :  kody K k jedne otazce
+# --> List listu, v kazdem listu je seznam otazek a kodu dotazniku vytazenych z kodu K.
+#       Struktura v listech: "kod_otazky | kod_dotazniku". 
+#       Kod_ciselniku je take nazvem listu.
 
 # iniciace vysledne struktury -- NK2
 NK2<-assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
@@ -473,20 +366,72 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
   NK2[[cis]]<-list_K
 }#for cis NK2
 names(NK2)<-NKB$kod_ciselniku
-#ok NK2
+#ok
+
+match(NK1[[1]][,1:2],NK1[[1]][,1:2])
+
+
+# struktura 3 : kod_ciselniku | popis otazky
+NK3 <- NKB[,1:2]
+#ok
+
+#============================================================================
+# NK1
+#  priprava NK1[[]] z NKall (vynecham zcela krok NKA) 
+
+#vytvoreni podadresare kam se budou ukladat generovane ciselniky
+mainDir <- getwd()
+subDir <- "extrahovane_ciselniky"
+if (file.exists(subDir)){
+  setwd(file.path(mainDir, subDir))
+} else {
+  dir.create(file.path(mainDir, subDir))
+  setwd(file.path(mainDir, subDir))
+}
+#smazat obsah podadreare subdir
+do.call(file.remove,list(list.files()))
+#opetovne nastaveni puvodniho pracovniho adresare
+setwd(mainDir)
+
+
+# iniciace vysledne struktury -- NK2
+NK1<-assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
+#uprava hlavicek v NKall
+zaloha_jmen_NKall<-names(NKall)
+names(NKall)<-c("znacka", "kod_odpovedi", "popis_odpovedi") 
+
+#vektor zacatkuu a koncuu cisleniku (zacatky: neni to Z ale NK, a tedy NK=Z-2)
+NKcis=which(NKall=="NK")
+ZKcis=which(NKall=="ZK")
+
+for (cis in 1 : sum(NKall=="NK") ) {
+  #priprava 1 ciselniku
+    jeden_ciselnik<-c()
+    jeden_ciselnik<-NKall[(NKcis[cis]+2) : (ZKcis[cis]), 2:3]
+    kod_ciselniku<- as.character(NKall[NKcis[cis],2])
+
+  #ulozeni ciselniku do listu
+  NK1[[cis]]<-jeden_ciselnik
+  names(NK1)[cis]<-kod_ciselniku
+  
+  #ulozeni ciselniku do txt v podslozce ciselniky
+  write.table(jeden_ciselnik, file = paste("./extrahovane_ciselniky/", kod_ciselniku, ".txt", sep = ""), sep=";", col.names = T, row.names=F, qmethod = "double")
+}
+names(NKall)<-zaloha_jmen_NKall
 
 
 
-#---------------------------------------------------------------------------
-# Ukladani a znovunacitani vysledku ========================================
-#---------------------------------------------------------------------------
 
 
-#pripadne ulozeni a znovunacteni vyslednych promennych:
 
-# save(NK1, NK2, NK3, NK4, file = "NK1234.RData")
-# load("NK1234.RData")
-# ok
+
+
+
+
+
+
+
+
 
 
 
