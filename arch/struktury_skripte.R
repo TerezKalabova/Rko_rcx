@@ -3,6 +3,9 @@
 # vyprazdneni promennych z Rka
 rm(list=ls())
 
+## change the working directory
+getwd()
+setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/shell")
 
 # knihovny ---------------------------------------------------------------------------------------
 
@@ -13,10 +16,6 @@ library(stringr)
 # -----------------------------------------------------------------------------------------------
 # nacteni dat (z AWK) =============================================================================
 # -----------------------------------------------------------------------------------------------
-
-## change the working directory
-getwd()
-setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/02_input_data/04_awk_data")
 
 # NKall
 # hlavicky: znacka | kod |  popis ||
@@ -42,8 +41,6 @@ if (length(radky_NKB_bez_NK)>0) {
 #ok
 
 
-setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/02_input_data/")
-
 # seznam_dotazniku 
 # (vektor)
 # arch: seznam_dotazniku<-c("P1", "P2", "P3", "N1", "N3", "N4", "N5", "PN6/1", "PN6/2", "PN6/3", "PN8", "PN18/1", "PN18/2", "PN18/3", "PN18/4", "T1", "T2", "T3", "T4", "T5",  "F1", "F2", "F3", "F4", "F5", "S1", "S2", "S3", "S4", "S5", "E1", "E2", "E3", "E4", "E5", "E6", "E7", "Th4", "Ft1", "Ft2", "Ft3", "Ft4", "Ft5", "Ft6", "Ft7", "Ft8", "Et2", "Et4", "Et5", "Et6", "Et7", "Et8", "Et9", "V18", "Nt1", "Nt2", "Nt3", "Nt4", "Nt5", "Nt6", "Nt8", "Nt9", "V19", "U8", "U11", "U13", "U15", "U18", "V8", "V11", "V13", "V15", "FSS", "FSS8", "FSS11", "FSS13", "FSS15", "FSS17", "FSS19")
@@ -66,7 +63,7 @@ seznam_dotazniku <- as.vector(unlist(read.table('seznam_dotazniku.txt', header=T
 # NK2 - list listuu, v kazdem listu je seznam otazek a kodu dotazniku vytazenych z kodu K.
 
 
-setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/")
+
 
 
 
@@ -100,7 +97,6 @@ NK3 <- NKB[,1:2]
 # vstup: NKall
 # vystup: NK1 (list listu)
 #-----
-setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/")
 
 #vytvoreni podadresare kam se budou ukladat generovane ciselniky
 mainDir <- getwd()
@@ -487,9 +483,9 @@ names(NK2)<-NKB$kod_ciselniku
 
 
 #pripadne ulozeni a znovunacteni vyslednych promennych:
-#   setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/RData_output/")
-#   save(NK1, NK2, NK3, NK4, file = "NK1234.RData")
-#   load("NK1234.RData")
+
+# save(NK1, NK2, NK3, NK4, file = "NK1234.RData")
+# load("NK1234.RData")
 # ok
 
 
