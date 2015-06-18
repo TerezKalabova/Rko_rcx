@@ -22,15 +22,15 @@ setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovni
 # hlavicky: znacka | kod |  popis ||
 # vstupni soubor: NKall.txt
 #-----
-NKall <- read.table("NKall.txt", header=FALSE, sep=";")
-names(NKall) <- c("poradi_tk","znacka", "kod", "popis") 
+NKall <- read.table('NKall.txt', header=FALSE, sep=";")
+names(NKall) <- c("znacka", "kod", "popis") 
 
 
 # NKB
 # hlavicky: kod ciselniku | popis ciselniku | kody K ||
 #vstupni soubor: NKB.txt
 #-----
-NKB <- read.table("NKB.txt", header=FALSE, sep=";")
+NKB <- read.table("NKB3.txt", header=FALSE, sep=";")
 names(NKB) <- c("kod_ciselniku", "popis_ciselniku", "kody_K")
 # inic uprava vstupnich dat NKB
 arch.NKB<-NKB #zaloha pro jistotu. Znovunahrani: NKB<-arch.NKB
@@ -119,17 +119,17 @@ setwd(mainDir)
 NK1<-assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
 #uprava hlavicek v NKall
 zaloha_jmen_NKall<-names(NKall)
-names(NKall)<-c("poradi_tk", "znacka", "kod_odpovedi", "popis_odpovedi") 
+names(NKall)<-c("znacka", "kod_odpovedi", "popis_odpovedi") 
 
 #vektor zacatkuu a koncuu cisleniku (zacatky: neni to Z ale NK, a tedy NK=Z-2)
-NKcis=which(NKall$znacka=="NK")
-ZKcis=which(NKall$znacka=="ZK")
+NKcis=which(NKall=="NK")
+ZKcis=which(NKall=="ZK")
 
-for (cis in 1 : length(NKcis) ) {
+for (cis in 1 : sum(NKall=="NK") ) {
   #priprava 1 ciselniku
   jeden_ciselnik<-c()
-  jeden_ciselnik<-NKall[(NKcis[cis]+2) : (ZKcis[cis]), 3:4]
-  kod_ciselniku<- as.character(NKall[NKcis[cis],3])
+  jeden_ciselnik<-NKall[(NKcis[cis]+2) : (ZKcis[cis]), 2:3]
+  kod_ciselniku<- as.character(NKall[NKcis[cis],2])
   
   #ulozeni ciselniku do listu
   NK1[[cis]]<-jeden_ciselnik
@@ -207,16 +207,8 @@ NKB$kody_K<-gsub("[[:space:]]", " ", NKB$kody_K)              #nahrazeni vsech t
 NKB$kody_K<-gsub("\xc2\xa0", " ", NKB$kody_K)                 #nahrazeni vsech typu mezer jednotnou mezerou 2.3 krok
 NKB$kody_K<-gsub(" ", " ", NKB$kody_K)                        #nahrazeni vsech typu mezer jednotnou mezerou 3/3 krok
 NKB$kody_K<-gsub("_", " ", NKB$kody_K)                        #nahrazeni podtrzitka jednotnou mezerou
-
 NKB$kody_K<-gsub("v", " v ", NKB$kody_K)                      #vlozeni mezer kolem vsech "v"
-NKB$kody_K<-gsub("  ", " ", NKB$kody_K)                       #dodatecne odebrani dvojtych mezer
-NKB$kody_K<-gsub("  ", " ", NKB$kody_K)                       #dodatecne odebrani dvojtych mezer
-NKB$kody_K<-gsub("  ", " ", NKB$kody_K)                       #dodatecne odebrani dvojtych mezer
 NKB$kody_K<-gsub("v i", "vi", NKB$kody_K)                     #odebrani mezery u "v" v rim. cisle
-NKB$kody_K<-gsub("i v v ", "iv v ", NKB$kody_K)               #odebrani mezery u "v" v rim. cisle
-NKB$kody_K<-gsub(" v v ", "v v ", NKB$kody_K)                 #zobecneni odebrani mezer kolem "v" / nutno overit dopady
-NKB$kody_K<-gsub("v v ", "v v ", NKB$kody_K)                  #zobecneni odebrani mezer kolem "v" / nutno overit dopady
-NKB$kody_K<-gsub(" v ,", "v,", NKB$kody_K)                    #odebrani mezer pokud je v jako koncove pismeno otazky pred carkou
 NKB$kody_K<-gsub("x v v", "xv v", NKB$kody_K) 
 NKB$kody_K<-gsub("v 1", "v1", NKB$kody_K)                     #odebrani mezery u "v" pred cislem
 NKB$kody_K<-gsub("v 2", "v2", NKB$kody_K)         
@@ -251,20 +243,16 @@ NK_cis_chyba_kody_K<-c()
 
 # seznam typu chyb
 pra_ret<-"Prazdny retezec"
-punct<-"Punct #%=~@#_:<>;'&"
-bez_v<-"Chybi delitko otazka-dotaznik"
-male_pis<-"Male_pismeno_na_zac_otazky"
-velke_V<-"Velke V na >2. miste otazky"
-chyba_ret<-"Chyba v retezci"
-chyba_skala<-"Nekompatibilni moznosti skaly"
-chyba_skala_nevim<-"Neznama chyba ve skale"
+punct<-"punct #%=~@#_:<>;'&"
+bez_v<-"chybi delitko otazka-dotaznik"
+male_pis<-"male_pismeno_na_zac_otazky"
+velke_V<-"velke V na >2. miste otazky"
 
 
 
 for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
   ciselnik<-as.character(NKB$kod_ciselniku[cis])
   kody_K<-as.vector(NKB$kody_K[cis]) #jeden radek vsech kodu K
-  chyba_uvnitr_kodu<-NULL
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # kontrola chyb v kody_K, pokud maji evidentne nekompatibilni tvar
@@ -317,7 +305,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
       pahyl_otazek<-c()
       for (us in 1 : length(useky_mezi_carkami) ){ #prochazeni kody_K po usecich
         
-        if (nchar(gsub(" ","", useky_mezi_carkami[us]))>=4 && grepl(" v ", useky_mezi_carkami[us])) { # usek ma min delku && obsahuje " v "
+        if (nchar(gsub(" ","", useky_mezi_carkami[us]))>=5 && grepl(" v ", useky_mezi_carkami[us])) { # usek ma min delku && obsahuje " v "
           nadejny_pahyl<-gsub(" v "," @ ", useky_mezi_carkami[us] ) #@@@
           nadej_pahyl_ret<-unlist(strsplit(nadejny_pahyl, " @ ")) #@@@
           if (length(nadej_pahyl_ret)==2 &&  is.element(gsub(" ","", nadej_pahyl_ret[2]), seznam_dotazniku) &&  !is.element(gsub(" ","", nadej_pahyl_ret[1]), prvky_skal) ) { # nadejny pahyl se rozpada prave na dve casti  && v nadejnem pahylu to za " v " ma typ seznam_dotazniku, to pred v neni prvek_skal
@@ -342,7 +330,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
           pahyl_otazek<-c() #po vlozeni pahylu do vysledneho retezce ho opet vyprazdnim ##
           
         } else { # TODO odstranit/ jen pro vyvoj ukazani chyby
-          useky_predb_ok<-c(useky_predb_ok, "Chyba nevim kde")
+          useky_predb_ok<-c(useky_predb_ok, "chyba nevim kde")
         }
         useky_ok<- useky_predb_ok #pokud je to ok
       }#for u
@@ -351,185 +339,139 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
 
         
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
         K_po_retezcich<-useky_ok    ###8.6.2015 || unlist(strsplit(kody_K, ", ")) #rozdeleni K kodu do retezcu po dotaznicich podle ", "
-  
-        if (is.null(useky_ok)) { #retezec se nepovedlo rozdelit ani na jeden validni usek --> chyba ##
-          #zapise cely chybny radek z NKB do tabulky chyb
-          NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_ret))
-          #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-          list_K<-as.data.frame(cbind(chyba_ret, "chyba", "chyba"))
-        } else {
+        
+        otazky<-dotazniky<-otazkyDB<-c() #vysledne otazky jednoho ciselniku a 1 kodu_K, vkladaji se do 1 listu s nazvem ciselniku
+        for (dot in 1: length(K_po_retezcich) ) { #prace po retezcich z kodu K
+          #krajeni retezce kodu K na OTAZKA - DOTAZNIK 
+          ret<-gsub(" ", "", unlist(strsplit(K_po_retezcich[dot], " @ "))) #rozdeleni K kodu na otazku a dotaznik podle " v " @@@
+          OTAZKA<-ret[1]
+          DOTAZNIK<-ret[2]
           
-            otazky<-dotazniky<-otazkyDB<-c() #vysledne otazky jednoho ciselniku a 1 kodu_K, vkladaji se do 1 listu s nazvem ciselniku
-            for (dot in 1: length(K_po_retezcich) ) { #prace po retezcich z kodu K
-              #krajeni retezce kodu K na OTAZKA - DOTAZNIK 
-              ret<-gsub(" ", "", unlist(strsplit(K_po_retezcich[dot], " @ "))) #rozdeleni K kodu na otazku a dotaznik podle " v " @@@
-              OTAZKA<-ret[1]
-              DOTAZNIK<-ret[2]
-              
-              #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-              # OTAZKA
-              
-              #cast retezce "OTAZKA":
-              #chyby
-              if (is.na(OTAZKA)) { #prazdny retezec
-                OTAZKA<-"chybejici_kod_otazky" 
-              } 
+          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          # OTAZKA
+          
+          #cast retezce "OTAZKA":
+          if (!grepl("-",OTAZKA) && !grepl(",",OTAZKA) ) { #pokud v otazce nejsou zadne pomlcky ani carky, a tedy vice moznosti, je pripravena pro dalsi zpracovani.
+            #v poradku, pokracujem
+            OTAZKA<- OTAZKA #tohle tu je navic, ale nechci nechat prazdny if, protoze to pak hazi chybu
+          } else if (is.na(OTAZKA)) { #prazdny retezec
+            OTAZKA<-"chybejici_kod_otazky"  
+            
+          } else if (grepl(",",OTAZKA)) { #zmnozena otazka na 1 dotaznik / pokud jsou v otazce carky, otazka se rozdeli do vice podotazek
+            podot<-unlist(strsplit(OTAZKA, ",")) 
+            #kontrola spojeni osamocenych moznosti typu "i,ii", "g,h", "1,2"
+            if (length (which (match (podot, prvky_skal) >0) ) >0) {
+              odstepky_ind=(which (match (podot, prvky_skal) >0) )
+              for (i in 1:length(odstepky_ind)) { #zpetne pripojeni odpojenych moznosti k puvodnim otazkam
+                #priprava zakladu otazky z predchozi otazky odriznutim prvni moznosti
+                posledni_znaky_ot<-c(str_sub(podot[odstepky_ind[i]-1], -1,-1), str_sub(podot[odstepky_ind[i]-1], -2,-1), str_sub(podot[odstepky_ind[i]-1], -3,-1), str_sub(podot[odstepky_ind[i]-1], -4,-1), str_sub(podot[odstepky_ind[i]-1], -5,-1)    )
+                pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
+                zaklad_predch_ot<-str_sub(podot[odstepky_ind[i]-1], 1, -(pocet_zn_odriznuti+1)) 
+                podot[odstepky_ind[i]]<-paste(zaklad_predch_ot, podot[odstepky_ind[i]], sep="")
+              }
+            }
+            OTAZKA<-podot
+            
+          } else if (any(grepl("-",OTAZKA))) { #v otazce je pomlcka. otazka muze obsahovat jeden i vice prvku vektoru 
+              #cvicna OTAZKA: OTAZKA<-c("S1a3-5" ,  " S2f" ,    " D2e5s"  , "E1di-iii", " A1dg" ,   " A1dh",    " S5d7ii",  " S5d7iii")
+              podot<-OTAZKA
+              for (j in 1 : length(which (grepl("-",OTAZKA))) ) {
+                ot_pomlcka_ind = rev(which(grepl("-",OTAZKA))) #vektor poradi otazek s pomlckou ve vektoru OTAZKA
+                zackon<-unlist(strsplit(OTAZKA[ot_pomlcka_ind[j]], "-"))
+                posledni_znaky_ot<-c(str_sub(zackon[1], -1,-1), str_sub(zackon[1], -2,-1), str_sub(zackon[1], -3,-1))
+                pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
                 
-              #zakladni tvar otazky
-              if (!grepl("-",OTAZKA) && !grepl(",",OTAZKA) ) { #pokud v otazce nejsou zadne pomlcky ani carky, a tedy vice moznosti, je pripravena pro dalsi zpracovani.
-                #v poradku, pokracujem
-                OTAZKA<- OTAZKA #tohle tu je navic, ale nechci nechat prazdny if, protoze to pak hazi chybu
-              }                      
-              
-              #otazka s carkami
-              if (grepl(",",OTAZKA)) { #zmnozena otazka na 1 dotaznik / pokud jsou v otazce carky, otazka se rozdeli do vice podotazek
-                podot<-unlist(strsplit(OTAZKA, ",")) 
-                #kontrola spojeni osamocenych moznosti typu "i,ii", "g,h", "1,2"
-                if (length (which (match (podot, prvky_skal) >0) ) >0) {
-                  odstepky_ind=(which (match (podot, prvky_skal) >0) )
-                  for (i in 1:length(odstepky_ind)) { #zpetne pripojeni odpojenych moznosti k puvodnim otazkam
-                    #priprava zakladu otazky z predchozi otazky odriznutim prvni moznosti
-                    posledni_znaky_ot<-c(str_sub(podot[odstepky_ind[i]-1], -1,-1), str_sub(podot[odstepky_ind[i]-1], -2,-1), str_sub(podot[odstepky_ind[i]-1], -3,-1), str_sub(podot[odstepky_ind[i]-1], -4,-1), str_sub(podot[odstepky_ind[i]-1], -5,-1)    )
-                    pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
-                    zaklad_predch_ot<-str_sub(podot[odstepky_ind[i]-1], 1, -(pocet_zn_odriznuti+1)) 
-                    podot[odstepky_ind[i]]<-paste(zaklad_predch_ot, podot[odstepky_ind[i]], sep="")
-                  }
-                }
-                OTAZKA<-podot
-              }               
-              
-              #otazka s pomlckami
-              if (any(grepl("-",OTAZKA))) { #v otazce je pomlcka. otazka muze obsahovat jeden i vice prvku vektoru 
-                  #cvicna OTAZKA: OTAZKA<-c("S1a3-5" ,  " S2f" ,    " D2e5s"  , "E1di-iii", " A1dg" ,   " A1dh",    " S5d7ii",  " S5d7iii")
-                  #cvicna OTAZKA lvl2:  OTAZKA<-"F1a-d4"
-                  podot<-OTAZKA
-                  pocet_pomlcek<-length(which (grepl("-",OTAZKA))) 
-                  for (j in 1 : pocet_pomlcek ) {
-                    ot_pomlcka_ind = max(rev(which(grepl("-",OTAZKA)))) #vektor poradi otazek s pomlckou ve vektoru OTAZKA
-                    zackon<-unlist(strsplit(OTAZKA[ot_pomlcka_ind], "-"))
-                    posledni_znaky_ot<-c(str_sub(zackon[1], -1,-1), str_sub(zackon[1], -2,-1), str_sub(zackon[1], -3,-1))
-                    pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
-                    
-                    zaklad_ot<-str_sub(zackon[1], 1, -(pocet_zn_odriznuti+1)) 
-                    prvni_moznost<-str_sub(zackon[1], -1, -(pocet_zn_odriznuti)) 
-                    posl_moznost<-zackon[2] 
-                    
-                    #odchyceni spatneho deleni skaly kvuli chybe v priprave K_kodu
-                    if (!any(posl_moznost==prvky_skal)) {
-                      posledni_znaky_ot_kon<-unique(c(str_sub(zackon[2], 1,1), str_sub(zackon[2], 1,2), str_sub(zackon[2], 1,3), str_sub(zackon[2], 1,4), str_sub(zackon[2], 1,5), str_sub(zackon[2], 1,6), str_sub(zackon[2], 1,7), str_sub(zackon[2], 1,8), str_sub(zackon[2], 1,9), str_sub(zackon[2], 1,10)))
-                      pocet_zn_odriznuti_kon<-length(which (match (posledni_znaky_ot_kon, prvky_skal) >0))
-                      posl_moznost<-str_sub(zackon[2], 1, pocet_zn_odriznuti_kon)
-                      koncovy_zaklad_ot<-str_sub(zackon[2], -(length(posledni_znaky_ot_kon)-pocet_zn_odriznuti_kon), -1)
-                      ###otazky_moznosti<- "chyba_v_priprave_K_kodu"
-                    } else {
-                      koncovy_zaklad_ot<-c()
-                    }
-                    
-                    #kdyz je posl_moznost validni, pokracuju dal 
+                zaklad_ot<-str_sub(zackon[1], 1, -(pocet_zn_odriznuti+1)) 
+                prvni_moznost<-str_sub(zackon[1], -1, -(pocet_zn_odriznuti)) 
+                posl_moznost<-zackon[2] 
+                
+                #odchyceni spatneho deleni skaly kvuli chybe v priprave K_kodu
+                if (!any(posl_moznost==prvky_skal)) {
+                  otazky_moznosti<- "chyba_v_priprave_K_kodu"
+                } else { #kdyz je posl_moznost validni, pokracuju dal 
                     #urceni skaly moznosti -- vybrana skala ulozena v promenne "skala"
                     typy_zackon<-typy_skal[c(which(prvni_moznost==prvky_skal), which(posl_moznost==prvky_skal))]
-                    if (all(typy_zackon=="cisla")) {
+                    if (any(typy_zackon=="cisla")) {
                       skala<-skala_cisla
-                    } else if ((length(typy_zackon)<=3) &&  length(which(typy_zackon=="pis"))==2 ) {
+                    }else if ((length(typy_zackon)<=3) &&  length(which(typy_zackon=="pis"))==2 ) {
                       skala<-skala_pis
-                    } else if ((length(typy_zackon)<=4) && length(which(typy_zackon=="rim"))==2 ) {
+                    }else {
                       skala<-skala_rim
-                    } else if ((length(typy_zackon)==2) && typy_zackon[1]!=typy_zackon[2]) {
-                      #je tam chyba ve skale:
-                      #zapise cely chybny radek z NKB do tabulky chyb
-                      NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala))
-                      #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-                      chyba_uvnitr_kodu<-chyba_skala #list_K<-as.data.frame(cbind(chyba_skala, "chyba", "chyba"))
-                    } else { #chyba ve skale nevim
-                      NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala_nevim))
-                      #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-                      chyba_uvnitr_kodu<-chyba_skala_nevim #list_K<-as.data.frame(cbind(chyba_skala, "chyba", "chyba"))
                     }
-                    
-                    if (is.null(chyba_uvnitr_kodu)) { #toto osetruje zatim jen chybu v moznostech skaly (17.6.2015), pokud je to TRUE, neni tam chyba.
-                      
-                      #vytvoreni moznosti ktere se budou pripojovat k zakladu otazky
-                      moznosti<-skala[which(prvni_moznost==skala) : which(posl_moznost==skala)]
-                      otazky_moznosti<-paste(zaklad_ot, moznosti, koncovy_zaklad_ot, sep="")
-                      
-                      #vlozeni namnozenych otazek do podot, jez zastupuje ve for cyklu puvodni retezec OTAZKA
-                      puv_podot_zac<-podot[-c(ot_pomlcka_ind : length(podot))]
-                      puv_podot_kon<-podot[-c(0 : ot_pomlcka_ind)]
-                      podot<-c(puv_podot_zac, otazky_moznosti, puv_podot_kon)
-                    } else {
-                      podot<-paste(chyba_uvnitr_kodu, ": ", OTAZKA, sep="")
-                    }
-                  
-                    OTAZKA<-podot ####  
-                  } #for j /namnozeni jedne pomlcky v kazdem cyklu
-              } 
-              
-              #else {
-              #  OTAZKA<-paste("neznama_chyba_otazka: ", OTAZKA, sep="")
-              #}
-              
-              #promenna OTAZKA je pripravena k parovani s dotaznikem. prozatim vse ok. 3.6.2015
-              
-              #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-              # DOTAZNIK
-              
-              #cast retezce DOTAZNIK:
-              if (!grepl("[[:punct:]]", gsub("/","",DOTAZNIK)) ) { #pokud v otazce nejsou zadne znaky !"#$%&'()*+,-.:;<=>?@[]^_`{|}~., a tedy nic sloziteho ale ocekavam ze jde pouze jediny dotaznik, ten je pripraven pro dalsi zpracovani. NOsetreno i pro dotaznik s lomitkem.
-                  #v poradku, pokracujem
-                  DOTAZNIK<-DOTAZNIK  #je to tu navic, ale nechtela jsem nechat telo cyklu prazdne.
-              } else if (is.na(DOTAZNIK)) { #chyba: prazdny retezec
-                  DOTAZNIK<-"chybejici_kod_dotaznikuNA"
-              } else if (grepl("-,",DOTAZNIK))  { #chyba: v dotazniku je pomlcka
-                  DOTAZNIK<-"chyba_kodovani_dotazniku-"
-              } else if (nchar(DOTAZNIK)<2)  { #chyba: kod dotazniky nema alespon dva znaky
-                DOTAZNIK<-"chyba_kodovani_dotazniku"
-                
-              } else if (grepl(",",DOTAZNIK)) { #v retezci dotazniku je carka -- vice dotazniku patri k otazce
-                  DOTAZNIK<-unlist(strsplit(DOTAZNIK, ",")) 
-              } else {
-                  DOTAZNIK<-paste("neznama_chyba_dotaznik: ", DOTAZNIK, sep="")
-              }
-              
-              #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-              # dokonceni uprav jednoho retezce OTAZKA-DOTAZNIK a jeho ulozeni
-              
-              # kombinovani dotazniku a otazek -- kartezsky soucin poctu dotazniku v DOTAZNIK a poctu otazek v OTAZKA
-              komb_OTAZKA<-rep(OTAZKA, each=length(DOTAZNIK))
-              komb_DOTAZNIK<-rep(DOTAZNIK, length(OTAZKA))
-              
-              #vytvoreni vektoru ve tvaru z DB: DOTAZNIK_OTAZKA
-              #komb_DOTAZNIK_OTAZKA <-paste(komb_DOTAZNIK, komb_OTAZKA, sep="_")
-              
-              #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-              # vkladani otazek, dotazniku a otazekDB do listu za 1 zpracovany retezec OTAZKA-DOTAZNIK
+                    #vytvoreni moznosti ktere se budou pripojovat k zakladu otazky
+                    moznosti<-skala[which(prvni_moznost==skala) : which(posl_moznost==skala)]
+                    otazky_moznosti<-paste(zaklad_ot, moznosti, sep="")
+                }
+                #vlozeni namnozenych otazek do podot, jez zastupuje ve for cyklu puvodni retezec OTAZKA
+                puv_podot_zac<-podot[-c(ot_pomlcka_ind[j] : length(podot))]
+                puv_podot_kon<-podot[-c(0 : ot_pomlcka_ind[j])]
+                podot<-c(puv_podot_zac, otazky_moznosti, puv_podot_kon)
+              } #for j /namnozeni jedne pomlcky v kazdem cyklu
+              OTAZKA<-podot
+      
+          } else {
+            OTAZKA<-paste("neznama_chyba_otazka: ", OTAZKA, sep="")
+          }
           
-              otazky<-c(otazky,komb_OTAZKA)
-              dotazniky<-c(dotazniky, komb_DOTAZNIK)
-              #otazkyDB<-c(otazkyDB,komb_DOTAZNIK_OTAZKA)
-            }#for dot K_po_retezcich (retezcich)
-        
-  
-            #kontrola velkeho pismena na zacatku otazky
-            if (any(str_sub(otazky, 1, 1) != toupper(str_sub(otazky, 1, 1)))) { #odchyceni otazek zacinajich malym pismenem (nejspis spatne rozdelene)
-              #zapise cely chybny radek z NKB do tabulky chyb
-              NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=male_pis))
-              #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-              list_K<-as.data.frame(cbind(male_pis, "chyba", "chyba"))
-            } else if (any(grepl("V", str_sub(gsub(" ","",otazky), 2)))) { #odchyceni otazek s velkym V na jinem ne prvnim miste a proto spatne delenych
-              #zapise cely chybny radek z NKB do tabulky chyb
-              NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=velke_V))
-              #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-              list_K<-as.data.frame(cbind(velke_V, "chyba", "chyba"))
-            } else {
-              
-              
-            otazkyDB<-paste(dotazniky, otazky,  sep="_")
-            list_K<-as.data.frame(cbind(otazky, dotazniky, otazkyDB))  
+          #promenna OTAZKA je pripravena k parovani s dotaznikem. prozatim vse ok. 3.6.2015
+          
+          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          # DOTAZNIK
+          
+          #cast retezce DOTAZNIK:
+          if (!grepl("[[:punct:]]", gsub("/","",DOTAZNIK)) ) { #pokud v otazce nejsou zadne znaky !"#$%&'()*+,-.:;<=>?@[]^_`{|}~., a tedy nic sloziteho ale ocekavam ze jde pouze jediny dotaznik, ten je pripraven pro dalsi zpracovani. NOsetreno i pro dotaznik s lomitkem.
+              #v poradku, pokracujem
+              DOTAZNIK<-DOTAZNIK  #je to tu navic, ale nechtela jsem nechat telo cyklu prazdne.
+          } else if (is.na(DOTAZNIK)) { #chyba: prazdny retezec
+              DOTAZNIK<-"chybejici_kod_dotaznikuNA"
+          } else if (grepl("-,",DOTAZNIK))  { #chyba: v dotazniku je pomlcka
+              DOTAZNIK<-"chyba_kodovani_dotazniku-"
+          } else if (nchar(DOTAZNIK)<2)  { #chyba: kod dotazniky nema alespon dva znaky
+            DOTAZNIK<-"chyba_kodovani_dotazniku"
             
-            }
-        } # else / if (is.null(useky_ok)) ###
+          } else if (grepl(",",DOTAZNIK)) { #v retezci dotazniku je carka -- vice dotazniku patri k otazce
+              DOTAZNIK<-unlist(strsplit(DOTAZNIK, ",")) 
+          } else {
+              DOTAZNIK<-paste("neznama_chyba_dotaznik: ", DOTAZNIK, sep="")
+          }
+          
+          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          # dokonceni uprav jednoho retezce OTAZKA-DOTAZNIK a jeho ulozeni
+          
+          # kombinovani dotazniku a otazek -- kartezsky soucin poctu dotazniku v DOTAZNIK a poctu otazek v OTAZKA
+          komb_OTAZKA<-rep(OTAZKA, each=length(DOTAZNIK))
+          komb_DOTAZNIK<-rep(DOTAZNIK, length(OTAZKA))
+          
+          #vytvoreni vektoru ve tvaru z DB: DOTAZNIK_OTAZKA
+          #komb_DOTAZNIK_OTAZKA <-paste(komb_DOTAZNIK, komb_OTAZKA, sep="_")
+          
+          #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          # vkladani otazek, dotazniku a otazekDB do listu za 1 zpracovany retezec OTAZKA-DOTAZNIK
+      
+          otazky<-c(otazky,komb_OTAZKA)
+          dotazniky<-c(dotazniky, komb_DOTAZNIK)
+          #otazkyDB<-c(otazkyDB,komb_DOTAZNIK_OTAZKA)
+        }#for dot K_po_retezcich (retezcich)
+        
+        #kontrola velkeho pismena na zacatku otazky
+        if (any(str_sub(otazky, 1, 1) != toupper(str_sub(otazky, 1, 1)))) { #odchyceni otazek zacinajich malym pismenem (nejspis spatne rozdelene)
+          #zapise cely chybny radek z NKB do tabulky chyb
+          NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=male_pis))
+          #vypise chybu do listu cis a skace na dalsi kolo forcyklu
+          list_K<-as.data.frame(cbind(male_pis, "chyba", "chyba"))
+        } else if (any(grepl("V", str_sub(gsub(" ","",otazky), 2)))) { #odchyceni otazek s velkym V na jinem ne prvnim miste a proto spatne delenych
+          #zapise cely chybny radek z NKB do tabulky chyb
+          NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=velke_V))
+          #vypise chybu do listu cis a skace na dalsi kolo forcyklu
+          list_K<-as.data.frame(cbind(velke_V, "chyba", "chyba"))
+        } else{
+          
+          
+        otazkyDB<-paste(dotazniky, otazky,  sep="_")
+        list_K<-as.data.frame(cbind(otazky, dotazniky, otazkyDB))  
+        
+        }
   } #else - kontrola celkovych chyb v kody_K
 
   NK2[[cis]]<-list_K
@@ -537,8 +479,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
 names(NK2)<-NKB$kod_ciselniku
 #ok NK2
 
-### vypis chyb:
-#  NK_cis_chyba_kody_K
+
 
 #---------------------------------------------------------------------------
 # Ukladani a znovunacitani vysledku ========================================
