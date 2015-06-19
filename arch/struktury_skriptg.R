@@ -23,7 +23,6 @@ setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovni
 # vstupni soubor: NKall.txt
 #-----
 NKall <- read.table("NKall.txt", header=FALSE, sep=";")
-# NKall <- read.csv("NKall.csv", header=FALSE, sep=";")
 names(NKall) <- c("poradi_tk","znacka", "kod", "popis") 
 
 
@@ -122,55 +121,24 @@ NK1<-assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
 zaloha_jmen_NKall<-names(NKall)
 names(NKall)<-c("poradi_tk", "znacka", "kod_odpovedi", "popis_odpovedi") 
 
-#prazdna tabulka kodu NK bez ciselniku
-NK_bez_ciselniku<-c()
-
 #vektor zacatkuu a koncuu cisleniku (zacatky: neni to Z ale NK, a tedy NK=Z-2)
-NKcis=which(NKall[,2]=="NK")
-ZKcis=which(NKall$znacka=="ZK") 
-ZZKcis=which(NKall$znacka=="ZZK")
-
-#spojeni koncu cisleniku se znackou ZK a ZZK do promenne ZKcis
-if (length(ZZKcis)>0) {
-  ZKcis<-sort(c(ZKcis,ZZKcis))
-}
- 
+NKcis=which(NKall$znacka=="NK")
+ZKcis=which(NKall$znacka=="ZK")
 
 for (cis in 1 : length(NKcis) ) {
   #priprava 1 ciselniku
   jeden_ciselnik<-c()
-  #konrola indexu ZKcis a NKcis
-  if (ZKcis[cis]<NKcis[cis+1] || (cis==length(NKcis))) {
-    jeden_ciselnik<-NKall[(NKcis[cis]+2) : (ZKcis[cis]), 3:4]
-    kod_ciselniku<- as.character(NKall[NKcis[cis],3])
-    nazev_ciselniku<-as.character(NKall[NKcis[cis],4])
-    
-    #ulozeni ciselniku do listu
-    NK1[[cis]]<-jeden_ciselnik
-    names(NK1)[cis]<-kod_ciselniku
-    
-    #ulozeni ciselniku do txt v podslozce ciselniky
-    cis_ulozeni<-jeden_ciselnik
-    
-    #doplneni nazvu cisleniku do treti bunky prvniho radku
-    treti_sl<-rep("", nrow(jeden_ciselnik))
-    cis_ulozeni<-cbind(cis_ulozeni, treti_sl)
-    names(cis_ulozeni)<-c("kod_odpovedi", "popis_odpovedi", paste("nazev ciselniku: ", nazev_ciselniku, sep="") )
-    
-    write.table(jeden_ciselnik, file = paste("./extrahovane_ciselniky/", kod_ciselniku, ".txt", sep = ""), sep=";", col.names = T, row.names=F, qmethod = "double") 
-    
-  } else {
-    NK_bez_ciselniku<-rbind(NKall[NKcis[cis],])
-    #NKcis[cis]<-NKcis[-cis]
-    ZKcis<-c( ZKcis[0:(cis-1)], 0, ZKcis[cis:length(ZKcis) ] )
-  }
-} #for cis
-
+  jeden_ciselnik<-NKall[(NKcis[cis]+2) : (ZKcis[cis]), 3:4]
+  kod_ciselniku<- as.character(NKall[NKcis[cis],3])
+  
+  #ulozeni ciselniku do listu
+  NK1[[cis]]<-jeden_ciselnik
+  names(NK1)[cis]<-kod_ciselniku
+  
+  #ulozeni ciselniku do txt v podslozce ciselniky
+  write.table(jeden_ciselnik, file = paste("./extrahovane_ciselniky/", kod_ciselniku, ".txt", sep = ""), sep=";", col.names = T, row.names=F, qmethod = "double")
+}
 names(NKall)<-zaloha_jmen_NKall
-
-#ulozeni tabulky NK kodu bez ciselniku
-write.table(NK_bez_ciselniku, file = paste("./extrahovane_ciselniky/", "NK_kody_s_prazdnym_ciselnikem", ".txt", sep = ""), sep=";", col.names = T, row.names=F, qmethod = "double") 
-
 #ok NK1
 
 
@@ -282,7 +250,7 @@ NKB$kody_K<-gsub(" -", "-", NKB$kody_K)                       #odebrani mezer ko
 NK_cis_chyba_kody_K<-c()
 
 # seznam typu chyb
-pra_ret<-"Prazdny retezec kody_K"
+pra_ret<-"Prazdny retezec"
 punct<-"Punct #%=~@#_:<>;'&"
 bez_v<-"Chybi delitko otazka-dotaznik"
 male_pis<-"Male_pismeno_na_zac_otazky"
@@ -290,7 +258,6 @@ velke_V<-"Velke V na >2. miste otazky"
 chyba_ret<-"Chyba v retezci"
 chyba_skala<-"Nekompatibilni moznosti skaly"
 chyba_skala_nevim<-"Neznama chyba ve skale"
-velke_pis<-"Vice velkych pismen v otazce / spatne deleni"
 
 
 
@@ -303,7 +270,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
   # kontrola chyb v kody_K, pokud maji evidentne nekompatibilni tvar
   
  #chyby v kody_K, kdy se dale kody_K ani nezkousi analyzovat
-  if (is.na(kody_K) || (kody_K=="")) {  #prazdny retezec --> chyba
+  if (is.na(kody_K)) {  #prazdny retezec --> chyba
     #zapise cely chybny radek z NKB do tabulky chyb
       NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=pra_ret))
       #vypise chybu do listu cis a skace na dalsi kolo forcyklu
@@ -316,7 +283,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
       #vypise chybu do listu cis a skace na dalsi kolo forcyklu
       list_K<-as.data.frame(cbind(punct, "chyba", "chyba"))  
             
-  }else if (!grepl(" v ", kody_K)) { #kody_K neobsahuje zadne " v " --> chyba
+  }else if (!grepl("v", kody_K)) { #kody_K neobsahuje zadne "v" --> chyba
     #zapise cely chybny radek z NKB do tabulky chyb
     NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=bez_v))
     #vypise chybu do listu cis a skace na dalsi kolo forcyklu
@@ -325,20 +292,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
     
     
   }else{ #kody_K obsahuje asi aspon jeden validni retezec --> ma smysl analyzovat kody_K
-   
-    #po " v " nenasleduje velke pismeno 
-    #reseni problemu typu: kody_K<- "A 8e v a v F5, A 10 e v a v T 5, A 9g v PN 18/2, A 10f v PN 6/2"  
-    #vstup: kody_K
-    if (grepl("v ", kody_K)) { #pokud kody_K obsahuji spon jedno "v "
-       v_ind <- rev(unlist(gregexpr(pattern ="v ", kody_K))) #indexy zacatkuu podretezce "v "
-       for (w in 1 : length(v_ind) ) {
-          znak_za_v<-substr(kody_K, (v_ind[w]+2), (v_ind[w]+2) )
-          if (!grepl("[[:upper:]]",znak_za_v,  perl=TRUE) && znak_za_v!="v") { #neni velke pismeno)
-            #smazat mezeru za v
-            kody_K<-paste( substr(kody_K, 1, (v_ind[w])), substr(kody_K, (v_ind[w])+2, nchar(kody_K)), sep="" ) 
-          }
-       }
-    }
+    
   # -----------------------------------------------------------------------------------------------
     # docasny pomocny usek, pak to prestehuju TODO
     
@@ -432,8 +386,6 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
               #otazka s carkami
               if (grepl(",",OTAZKA)) { #zmnozena otazka na 1 dotaznik / pokud jsou v otazce carky, otazka se rozdeli do vice podotazek
                 podot<-unlist(strsplit(OTAZKA, ",")) 
-                #indexy useku ktere nezacinaji velkym pismenem //pro prvni elseif
-                notUpperInd<-which(match(tolower(podot),podot) >0)
                 #kontrola spojeni osamocenych moznosti typu "i,ii", "g,h", "1,2"
                 if (length (which (match (podot, prvky_skal) >0) ) >0) {
                   odstepky_ind=(which (match (podot, prvky_skal) >0) )
@@ -444,75 +396,9 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
                     zaklad_predch_ot<-str_sub(podot[odstepky_ind[i]-1], 1, -(pocet_zn_odriznuti+1)) 
                     podot[odstepky_ind[i]]<-paste(zaklad_predch_ot, podot[odstepky_ind[i]], sep="")
                   }
-                                    
-                } else if (length(notUpperInd) >0) {  #aspon jeden zacina malym, ale nebyl to prvek skaly coz je vychytane v predchozim ifu
-                    if (min(notUpperInd)>1) { #je druhy a vys
-                       #&& prvni znak je ze stejne skaly jako posledni znak predchoziho && da se rozdelit na prvek skaly a zbytek) { # reseni kodu typu "D 6i,iia"
-                        for (u in 1 : length(notUpperInd) ) {
-                          usek_s_malym<-podot[notUpperInd[u]] #usek s malym
-                          usek_pred<-podot[(notUpperInd[u])-1]
-                          prvni_moznost
-                          
-                         #ot_pomlcka_ind = max(rev(which(grepl("-",OTAZKA)))) #vektor poradi otazek s pomlckou ve vektoru OTAZKA
-                          zackon<-c(usek_pred, usek_s_malym)
-                          posledni_znaky_ot<-c(str_sub(zackon[1], -1,-1), str_sub(zackon[1], -2,-1), str_sub(zackon[1], -3,-1))
-                          pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
-                          
-                          zaklad_ot<-str_sub(zackon[1], 1, -(pocet_zn_odriznuti+1)) 
-                          prvni_moznost<-str_sub(zackon[1], -1, -(pocet_zn_odriznuti)) 
-                          posl_moznost<-zackon[2] 
-                          
-                         #odchyceni spatneho deleni skaly kvuli chybe v priprave K_kodu typu "D 6i,iia". Toto by melo platit vzdycky.
-                         if (!any(posl_moznost==prvky_skal)) {
-                           posledni_znaky_ot_kon<-unique(c(str_sub(zackon[2], 1,1), str_sub(zackon[2], 1,2), str_sub(zackon[2], 1,3), str_sub(zackon[2], 1,4), str_sub(zackon[2], 1,5), str_sub(zackon[2], 1,6), str_sub(zackon[2], 1,7), str_sub(zackon[2], 1,8), str_sub(zackon[2], 1,9), str_sub(zackon[2], 1,10)))
-                           pocet_zn_odriznuti_kon<-length(which (match (posledni_znaky_ot_kon, prvky_skal) >0))
-                           posl_moznost<-str_sub(zackon[2], 1, pocet_zn_odriznuti_kon)
-                           koncovy_zaklad_ot<-str_sub(zackon[2], -(length(posledni_znaky_ot_kon)-pocet_zn_odriznuti_kon), -1)
-                           ###otazky_moznosti<- "chyba_v_priprave_K_kodu"
-                         } else {
-                           koncovy_zaklad_ot<-c()
-                         }
-                          
-                          typy_zackon<-typy_skal[c(which(str_sub(usek_pred,-1,-1)==prvky_skal), which(str_sub(usek_s_malym,1,1)==prvky_skal))]
-                          if (all(typy_zackon=="cisla")) {
-                            skala<-skala_cisla
-                          } else if ((length(typy_zackon)<=3) &&  length(which(typy_zackon=="pis"))==2 ) {
-                            skala<-skala_pis
-                          } else if ((length(typy_zackon)<=4) && length(which(typy_zackon=="rim"))==2 ) {
-                            skala<-skala_rim
-                          } else if ((length(typy_zackon)==2) && typy_zackon[1]!=typy_zackon[2]) {
-                            #je tam chyba ve skale:
-                            #zapise cely chybny radek z NKB do tabulky chyb
-                            NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala))
-                            #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-                            chyba_uvnitr_kodu<-chyba_skala #list_K<-as.data.frame(cbind(chyba_skala, "chyba", "chyba"))
-                          } else { #chyba ve skale nevim
-                            NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala_nevim))
-                            #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-                            chyba_uvnitr_kodu<-chyba_skala_nevim #list_K<-as.data.frame(cbind(chyba_skala, "chyba", "chyba"))
-                          }
-                          
-                          #rozdeleni usek_s_malym na prvek skaly a neprazdny zbytek
-                          if (is.null(chyba_uvnitr_kodu)) { #toto osetruje zatim jen chybu v moznostech skaly (17.6.2015), pokud je to TRUE, neni tam chyba.
-                            
-                            #vytvoreni moznosti ktere se budou pripojovat k zakladu otazky
-                            moznosti<-c(prvni_moznost, posl_moznost)
-                            otazky_moznosti<-paste(zaklad_ot, moznosti, koncovy_zaklad_ot, sep="")
-                            
-                            #vlozeni namnozenych otazek do podot, jez zastupuje ve for cyklu puvodni retezec OTAZKA
-                            puv_podot_zac<-podot[-c((notUpperInd[u]-1) : length(podot))]
-                            puv_podot_kon<-podot[-c(0 : notUpperInd[u])]
-                            podot<-c(puv_podot_zac, otazky_moznosti, puv_podot_kon)
-                          } else {
-                            podot<-paste(chyba_uvnitr_kodu, ": ", OTAZKA, sep="")
-                          }
-                          
-                          OTAZKA<-podot ####  
-                        } #for u
-                    } #if min
-               } #else if (length(notUpperInd) >0)
+                }
                 OTAZKA<-podot
-              } #if otazka s carkami         
+              }               
               
               #otazka s pomlckami
               if (any(grepl("-",OTAZKA))) { #v otazce je pomlcka. otazka muze obsahovat jeden i vice prvku vektoru 
@@ -580,7 +466,6 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
                   } #for j /namnozeni jedne pomlcky v kazdem cyklu
               } 
               
-             
               #else {
               #  OTAZKA<-paste("neznama_chyba_otazka: ", OTAZKA, sep="")
               #}
@@ -637,17 +522,11 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
               NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=velke_V))
               #vypise chybu do listu cis a skace na dalsi kolo forcyklu
               list_K<-as.data.frame(cbind(velke_V, "chyba", "chyba"))
-            } else if (length(grep("[[:upper:]]",unlist(strsplit(toString(otazky), split="")), perl=TRUE))!=length(otazky)) { #odchyceni otazek s vice velkymi pismeny //spatne deleni otazky
-              #zapise cely chybny radek z NKB do tabulky chyb
-              NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=velke_pis))
-              #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-              list_K<-as.data.frame(cbind(velke_pis, "chyba", "chyba"))
-            }
-            else {
+            } else {
               
               
-              otazkyDB<-paste(dotazniky, otazky,  sep="_")
-              list_K<-as.data.frame(cbind(otazky, dotazniky, otazkyDB))  
+            otazkyDB<-paste(dotazniky, otazky,  sep="_")
+            list_K<-as.data.frame(cbind(otazky, dotazniky, otazkyDB))  
             
             }
         } # else / if (is.null(useky_ok)) ###
