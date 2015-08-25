@@ -90,7 +90,6 @@ setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovni
 #-----
 
 NK3 <- NKB[,1:2]
-
 #ok NK3
 # head(NK3) head(NKB)
 
@@ -241,7 +240,7 @@ if (length(nazvy_ciselniku_NK4)>0) {
 }
 #ok NK4
 
-rm(list, list_cis, listy, naz, porovnavaci_nazvy_NK3)
+
 
 #=============================================================================================================
 # NK2
@@ -500,14 +499,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
                 ret_mnozeni_otazky<-c()
                 pom_ind_ret<-c(ind_mnozeni_otazky, nchar(OTAZKA)+1)
                 for (m in 1:pocet_prv_pah) {
-                  vel_pis_ret<-substr(OTAZKA, pom_ind_ret[m], pom_ind_ret[m+1]-1)
-                  if (str_sub(vel_pis_ret, -1,-1)==" ") {
-                    vel_pis_ret<-str_sub(vel_pis_ret, 1,-2)
-                  }
-                  if (str_sub(vel_pis_ret, -1,-1)==",") {
-                    vel_pis_ret<-str_sub(vel_pis_ret, 1,-2)
-                  }                  
-                  ret_mnozeni_otazky<-c(ret_mnozeni_otazky, vel_pis_ret )
+                  ret_mnozeni_otazky<-c(ret_mnozeni_otazky, substr(OTAZKA, pom_ind_ret[m], pom_ind_ret[m+1]-1) )
                 }
                 
                 finpodot<-c()
@@ -521,7 +513,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
                     notUpperInd<-which(match(tolower(podotmnoz),podotmnoz) >0)
                     pompodotmnoz<-podotmnoz[1]
                     
-                      if (length(notUpperInd) >0) {                   
+                        if (length(notUpperInd) >0) {                   
                         if (min(notUpperInd)>1) { #je druhy a vys
                             #&& prvni znak je ze stejne skaly jako posledni znak predchoziho && da se rozdelit na prvek skaly a zbytek) { # reseni kodu typu "D 6i,iia"
                             for (u in 1 : length(notUpperInd) ) {
@@ -587,6 +579,13 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
                                   moznosti<-c(prvni_moznost, posl_moznost)
                                   otazky_moznosti<-paste(zaklad_ot, moznosti, koncovy_zaklad_ot, sep="") #/oprava 21.8.2015/ nutno mnozit vsechny predchozi podretezce v podotmnoz, ne jen posledni z nich. 
                                   #mnozeni vsech uz vlozenych retezcu v podotmnoz: od uz vlozenych retezcu odrezavam delku prvni moznosti a nahrazuju novou moznosti, priklada se tedy nasobek retezcu
+                                  #TODO!!!!
+                                                  
+                                  
+                                  #vlozeni namnozenych otazek do podotmnoz, jez zastupuje ve for cyklu puvodni retezec OTAZKA
+                                  ##puv_podotmnoz_zac<-podotmnoz[-c((notUpperInd[u]-1) : length(podotmnoz))]
+                                  ##puv_podotmnoz_kon<-podotmnoz[-c(0 : notUpperInd[u])]
+                                  ##podotmnoz<-c(puv_podotmnoz_zac, otazky_moznosti, puv_podotmnoz_kon)
                                   #oprava vlozeni nove namnozenych otazek, 21.8.2015:
                                   upredpodot<-unique(c(upredpodot, otazky_moznosti)) #unique je pro pripad pridavani vic nez dou moznosti, napr 1,2,3.
                                 } else {
@@ -613,100 +612,76 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
                   if (any(grepl("-",podotmnoz))) { #v otazce je pomlcka. otazka muze obsahovat jeden i vice prvku vektoru 
                       #cvicna OTAZKA: OTAZKA<-c("S1a3-5" ,  " S2f" ,    " D2e5s"  , "E1di-iii", " A1dg" ,   " A1dh",    " S5d7ii",  " S5d7iii")
                       #cvicna OTAZKA lvl2:  OTAZKA<-"F1a-d4"
-                      #podotmnoz je zde ve tvaru vektor jedna az nekolik otazek bez carek uvnitr s jednou az hodne pomlckami
-                      pompodotmnoz<-c()
-                      for (ipodotmnoz in 1:length(podotmnoz)) {
-                        podot<-podotmnoz[ipodotmnoz] #podot je jeden retezec s aspon jednou pomlckou
-                        podotus<-unlist(strsplit(podot, "-")) #useky v jednom retezci mezi pomlckami
-                        pocet_pomlcek<-length(podotus)-1 
-                        usekypred<-podotus[1]
-                        pomusekypred<-c() #vysledne namnozene useky z jednoho podot
+                      podot<-podotmnoz
+                      pocet_pomlcek<-length(which (grepl("-",podotmnoz))) 
+                      for (j in 1 : pocet_pomlcek ) {
+                        ot_pomlcka_ind = max(rev(which(grepl("-",podotmnoz)))) #vektor poradi otazek s pomlckou ve vektoru podotmnoz
+                        zackon<-unlist(strsplit(podotmnoz[ot_pomlcka_ind], "-"))
+                        posledni_znaky_ot<-c(str_sub(zackon[1], -1,-1), str_sub(zackon[1], -2,-1), str_sub(zackon[1], -3,-1))
+                        pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
                         
+                        zaklad_ot<-str_sub(zackon[1], 1, -(pocet_zn_odriznuti+1)) 
+                        prvni_moznost<- str_sub(zackon[1], nchar(zackon[1])-pocet_zn_odriznuti+1, nchar(zackon[1])) #str_sub(zackon[1], -1, -(pocet_zn_odriznuti)) 
+                        posl_moznost<-zackon[2] 
                         
+                        #odchyceni spatneho deleni skaly kvuli chybe v priprave K_kodu
+                        if (!is.na(posl_moznost)) {
+                          if (!any(posl_moznost==prvky_skal)) {
+                            posledni_znaky_ot_kon<-unique(c(str_sub(zackon[2], 1,1), str_sub(zackon[2], 1,2), str_sub(zackon[2], 1,3), str_sub(zackon[2], 1,4), str_sub(zackon[2], 1,5), str_sub(zackon[2], 1,6), str_sub(zackon[2], 1,7), str_sub(zackon[2], 1,8), str_sub(zackon[2], 1,9), str_sub(zackon[2], 1,10)))
+                            pocet_zn_odriznuti_kon<-length(which (match (posledni_znaky_ot_kon, prvky_skal) >0))
+                            posl_moznost<-str_sub(zackon[2], 1, pocet_zn_odriznuti_kon)
+                            koncovy_zaklad_ot<-str_sub(zackon[2], -(length(posledni_znaky_ot_kon)-pocet_zn_odriznuti_kon), -1)
+                            ###otazky_moznosti<- "chyba_v_priprave_K_kodu"
+                          }else{
+                            koncovy_zaklad_ot<-c()
+                          } 
+                        } else {
+                          NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala))
+                        }
                         
-                        if (pocet_pomlcek>0) {
-                          for (j in 1 : pocet_pomlcek ) {
-                            
-                              ###ot_pomlcka_ind = max(rev(which(grepl("-",podotmnoz)))) #vektor poradi otazek s pomlckou ve vektoru podotmnoz
-                            
-                              pomusekypred<-c() #vysledne namnozene useky z jednoho podot
-                              for (iusekypred in 1:length(usekypred)) {
-                                zackon<-c(usekypred[iusekypred],podotus[j+1])   ###unlist(strsplit(podotmnoz[ot_pomlcka_ind], "-"))                          
-                                #zac:
-                                posledni_znaky_ot<-c(str_sub(zackon[1], -1,-1), str_sub(zackon[1], -2,-1), str_sub(zackon[1], -3,-1))
-                                pocet_zn_odriznuti<-length(which (match (posledni_znaky_ot, prvky_skal) >0))
-                                zaklad_ot<-str_sub(zackon[1], 1, -(pocet_zn_odriznuti+1)) 
-                                #prvni moznost:
-                                prvni_moznost<- str_sub(zackon[1], nchar(zackon[1])-pocet_zn_odriznuti+1, nchar(zackon[1])) #str_sub(zackon[1], -1, -(pocet_zn_odriznuti)) 
-                                #posl moznost + prip koncovy zaklad otazky:
-                                posl_moznost<-zackon[2]
-                                #odchyceni spatneho deleni skaly kvuli chybe v priprave K_kodu
-                                if (!is.na(posl_moznost)) {
-                                  if (!any(posl_moznost==prvky_skal)) {
-                                    posledni_znaky_ot_kon<-unique(c(str_sub(zackon[2], 1,1), str_sub(zackon[2], 1,2), str_sub(zackon[2], 1,3), str_sub(zackon[2], 1,4), str_sub(zackon[2], 1,5), str_sub(zackon[2], 1,6), str_sub(zackon[2], 1,7), str_sub(zackon[2], 1,8), str_sub(zackon[2], 1,9), str_sub(zackon[2], 1,10)))
-                                    pocet_zn_odriznuti_kon<-length(which (match (posledni_znaky_ot_kon, prvky_skal) >0))
-                                    posl_moznost<-str_sub(zackon[2], 1, pocet_zn_odriznuti_kon)
-                                    koncovy_zaklad_ot<-str_sub(zackon[2], -(length(posledni_znaky_ot_kon)-pocet_zn_odriznuti_kon), -1)
-                                    ###otazky_moznosti<- "chyba_v_priprave_K_kodu"
-                                  }else{
-                                    koncovy_zaklad_ot<-c()
-                                  } 
-                                } else {
-                                  NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala))
-                                }
-                                #kdyz je posl_moznost validni, pokracuju dal 
-                                
-                                #urceni skaly moznosti -- vybrana skala ulozena v promenne "skala"
-                                typy_zackon<-typy_skal[c(which(prvni_moznost==prvky_skal), which(posl_moznost==prvky_skal))]
-                                if (all(typy_zackon=="cisla")) {
-                                  skala<-skala_cisla
-                                } else if ((length(typy_zackon)<=3) &&  length(which(typy_zackon=="pis"))==2 ) {
-                                  skala<-skala_pis
-                                } else if ((length(typy_zackon)<=4) && length(which(typy_zackon=="rim"))==2 ) {
-                                  skala<-skala_rim
-                                } else if ((length(typy_zackon)==2) && typy_zackon[1]!=typy_zackon[2]) { #odchyceni chyby veskale:
-                                  NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala)) #zapise cely chybny radek z NKB do tabulky chyb
-                                  chyba_uvnitr_kodu<-chyba_skala #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-                                  list_K<-as.data.frame(cbind(chyba_skala, "chyba", "chyba"))
-                                } else { #chyba ve skale nevim
-                                  NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala_nevim))
-                                  #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-                                  chyba_uvnitr_kodu<-chyba_skala_nevim #
-                                  list_K<-as.data.frame(cbind(chyba_skala_nevim, "chyba", "chyba"))
-                                }
-                                
-                                if (is.null(chyba_uvnitr_kodu) && prvni_moznost!="") { #toto osetruje zatim jen chybu v moznostech skaly (17.6.2015), pokud je to TRUE, neni tam chyba.
-                                  
-                                  #vytvoreni moznosti ktere se budou pripojovat k zakladu otazky
-                                  moznosti<-skala[which(prvni_moznost==skala) : which(posl_moznost==skala)]
-                                  otazky_moznosti<-paste(zaklad_ot, moznosti, koncovy_zaklad_ot, sep="")
-                                  
-                                  #vlozeni namnozenych otazek do podot, jez zastupuje ve for cyklu puvodni retezec podotmnoz
-                                  pomusekypred<-c(pomusekypred,otazky_moznosti)
-                                  
-                                  ###puv_podot_zac<-podot[-c(ot_pomlcka_ind : length(podot))]
-                                  ###puv_podot_kon<-podot[-c(0 : ot_pomlcka_ind)]
-                                  ###podot<-c(puv_podot_zac, otazky_moznosti, puv_podot_kon)
-                                } else {
-                                  podot<-paste(chyba_uvnitr_kodu, ": ", podotmnoz, sep="")
-                                  NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba="chyba_moznosti"))
-                                }
-                              } #for ipomlckypred
-                              usekypred<-pomusekypred
-                              #podotmnoz<-podot ####  nemela bych si prepisovat podotmnoz protoze z nej nacitam vstupy 24.8.2015, tohle asi prijde smazat.
-                            
-                          } #for j /namnozeni jedne pomlcky v kazdem cyklu
-                          podot<- usekypred #spojeny jeden retezec podot namnozenych vsech pomlcek
-                        }#if pocet pomlcek v podot >0
-                                              
-                        pompodotmnoz<-c(pompodotmnoz, podot)  
-                    }#for ipodotmnoz
-                    podotmnoz<-pompodotmnoz
+                        #kdyz je posl_moznost validni, pokracuju dal 
+                        #urceni skaly moznosti -- vybrana skala ulozena v promenne "skala"
+                        typy_zackon<-typy_skal[c(which(prvni_moznost==prvky_skal), which(posl_moznost==prvky_skal))]
+                        if (all(typy_zackon=="cisla")) {
+                          skala<-skala_cisla
+                        } else if ((length(typy_zackon)<=3) &&  length(which(typy_zackon=="pis"))==2 ) {
+                          skala<-skala_pis
+                        } else if ((length(typy_zackon)<=4) && length(which(typy_zackon=="rim"))==2 ) {
+                          skala<-skala_rim
+                        } else if ((length(typy_zackon)==2) && typy_zackon[1]!=typy_zackon[2]) {
+                          #je tam chyba ve skale:
+                          #zapise cely chybny radek z NKB do tabulky chyb
+                          NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala))
+                          #vypise chybu do listu cis a skace na dalsi kolo forcyklu
+                          chyba_uvnitr_kodu<-chyba_skala #
+                          list_K<-as.data.frame(cbind(chyba_skala, "chyba", "chyba"))
+                        } else { #chyba ve skale nevim
+                          NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba=chyba_skala_nevim))
+                          #vypise chybu do listu cis a skace na dalsi kolo forcyklu
+                          chyba_uvnitr_kodu<-chyba_skala_nevim #
+                          list_K<-as.data.frame(cbind(chyba_skala_nevim, "chyba", "chyba"))
+                        }
+                        
+                        if (is.null(chyba_uvnitr_kodu) && prvni_moznost!="") { #toto osetruje zatim jen chybu v moznostech skaly (17.6.2015), pokud je to TRUE, neni tam chyba.
+                          
+                          #vytvoreni moznosti ktere se budou pripojovat k zakladu otazky
+                          moznosti<-skala[which(prvni_moznost==skala) : which(posl_moznost==skala)]
+                          otazky_moznosti<-paste(zaklad_ot, moznosti, koncovy_zaklad_ot, sep="")
+                          
+                          #vlozeni namnozenych otazek do podot, jez zastupuje ve for cyklu puvodni retezec podotmnoz
+                          puv_podot_zac<-podot[-c(ot_pomlcka_ind : length(podot))]
+                          puv_podot_kon<-podot[-c(0 : ot_pomlcka_ind)]
+                          podot<-c(puv_podot_zac, otazky_moznosti, puv_podot_kon)
+                        } else {
+                          podot<-paste(chyba_uvnitr_kodu, ": ", podotmnoz, sep="")
+                          NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba="chyba_moznosti"))
+                        }
+                      
+                        podotmnoz<-podot ####  
+                      } #for j /namnozeni jedne pomlcky v kazdem cyklu
                   } #if otazka s pomlckami
                   
-                  
-                  
-                  #TODO 21.8.2015: poskladat zpatky hotovy vektor OTAZKA / skontrolovat jestli to funguje
+                  #TODO 21.8.2015: poskladat zpatky hotovy vektor otazka / skontrolovat jestli to funguje
                   finpodot<-c(finpodot,podotmnoz)  
                   
                 } #for mnozeni otazky  
@@ -783,7 +758,6 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
             #zaverecne kontroly ==============================================================================================================================
             
             #kontrola ztracenych znaku
-            if (!(is.null(K_po_retezcich) || is.null(otazky) || is.null(dotazniky) )) {
             kontrola_znaku_kody_K<-sort(unique(unlist(strsplit(K_po_retezcich, ""))))
             kody_K_cisla<-unique(na.omit(as.numeric(unlist(strsplit(unlist(kontrola_znaku_kody_K), "[^0-9]+")))))
             kody_K_upper<-unique(na.omit(unlist(strsplit(kontrola_znaku_kody_K,"[^A-Z]"))))
@@ -792,10 +766,6 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
             finkody_K_cisla<-unique(na.omit(as.numeric(unlist(strsplit(unlist(kontrola_znaku_finkody), "[^0-9]+")))))
             finkody_K_upper<-unique(na.omit(unlist(strsplit(kontrola_znaku_finkody,"[^A-Z]"))))
             finkody_K_lower<-unique(na.omit(unlist(strsplit(kontrola_znaku_finkody, "[^a-z]")))) 
-            } else {
-              NK_cis_chyba_kody_K<-rbind(NK_cis_chyba_kody_K , cbind(NKB[cis,], chyba="kontrola_ztracenych_znaku_NULL")) #zapise cely chybny radek z NKB do tabulky chyb
-              list_K<-as.data.frame(cbind("kontrola_ztracenych_znaku_NULL", "chyba", "chyba")) #vypise chybu do listu cis a skace na dalsi kolo forcyklu
-            }
                               
             if (!(all(is.element(kody_K_cisla, finkody_K_cisla)) && all(is.element(kody_K_upper, finkody_K_upper)) &&  all(is.element(kody_K_lower, finkody_K_lower)) )) { #neobsahuje vsechny druhy velkych pismen, malych pismen a cisel jako na zacatku
               #zapise cely chybny radek z NKB do tabulky chyb
@@ -820,7 +790,7 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
             } else {
               
               
-              otazkyDB<-paste(gsub("/","",dotazniky), otazky,  sep="_")
+              otazkyDB<-paste(dotazniky, otazky,  sep="_")
               list_K<-as.data.frame(cbind(otazky, dotazniky, otazkyDB))  
             
             }
@@ -845,13 +815,9 @@ write.table(NK_cis_chyba_kody_K, file = "/home/kalabava/sya/60_Elspac/03_dokumen
 ### vypis kontrolni tabulky NK2
 # NK2tab
 write.table(NK2tab, file = "/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/prehledove_tabulky/NK2tab.txt", sep=";", col.names = T, row.names=F, qmethod = "double") 
-# NK3
-write.table(NK3, file = "/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/prehledove_tabulky/NK3.txt", sep=";", col.names = T, row.names=F, qmethod = "double") 
 
 
-# NK2 mazani nearchivovanych promennych ------------------------------------
 
-rm (bez_v,chyba_ret,chyba_skala,chyba_skala_nevim,chyba_uvnitr_kodu, ciselnik, cis, dot,DOTAZNIK,dotazniky,finkody_K_cisla,finkody_K_lower, finkody_K_upper,finpodot, ind_mnozeni_otazky, ipodotmnoz, iusekypred,j, kody_K, kody_K_cisla, kody_K_lower, kody_K_upper, komb_DOTAZNIK, komb_OTAZKA, koncovy_zaklad_ot, kontrola_znaku_finkody, kontrola_znaku_kody_K, K_po_retezcich, list, list_K, m, male_pis, mnozeni_otazky, moznosti, nadejny_pahyl, nadej_pahyl_ret, notUpperInd, orez_2, OTAZKA, otazky, otazkyDB, otazky_moznosti,pahyl_otazek, pocet_orez_2, pocet_pomlcek, pocet_prv_pah, pocet_useku, pocet_zn_odriznuti, pocet_zn_odriznuti_kon, podot, podotmnoz, podotus, pom_ind_ret, pompodotmnoz, pomusekypred, posledni_znaky_ot, posledni_znaky_ot_kon, posl_moznost, pra_ret, prvni_moznost, punct, punct_pattern, ret, ret_mnozeni_otazky, skala, typ_orez_2,typy_skal, typy_zackon, u, upred, upredpodot, us, usek_pred, usek_s_malym, useky_mezi_carkami, useky_ok, usekypred, useky_predb_ok, velke_pis, velke_V, vel_pis_ret, v_ind, w, zackon, zaklad_ot, znak_za_v )
 
 
 #---------------------------------------------------------------------------
