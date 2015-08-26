@@ -28,7 +28,7 @@ setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovni
 
 NKall <- read.table("NKall.txt", header=FALSE, sep=";", quote = "\"", dec= ".") 
 names(NKall) <- c("poradi_tk","znacka", "kod", "popis") 
-#arch.NKall<-NKall
+arch.NKall<-NKall
 
 #--------------------------------------------------
 # NKB
@@ -39,9 +39,9 @@ names(NKall) <- c("poradi_tk","znacka", "kod", "popis")
 # V3: kody_K
 #--------------------------------------------------
 NKB <- read.table("NKB.txt", header=FALSE, sep=";", quote = "\"", dec= ".") 
-names(NKB) <- c("kod_ciselniku", "nazev_ciselniku", "kody_K")
+names(NKB) <- c("kod_ciselniku", "popis_ciselniku", "kody_K")
 # inic uprava vstupnich dat NKB
-#arch.NKB<-NKB #zaloha pro jistotu. Znovunahrani: NKB<-arch.NKB
+arch.NKB<-NKB #zaloha pro jistotu. Znovunahrani: NKB<-arch.NKB
 
 
 #--------------------------------------------------
@@ -90,13 +90,12 @@ setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovni
 #-----
 
 NK3 <- NKB[,1:2]
-names(NK3)<-c("kod_ciselniku", "nazev_ciselniku")
+
 #ok NK3
 # head(NK3) head(NKB)
 
-# NK3
-write.table(NK3, file = "/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/prehledove_tabulky/NK_navy_ciselniku.txt", sep=";", col.names = T, row.names=F, qmethod = "double") 
-NK3_nazvy_cis<-NK3
+
+
 
 #===========================================
 # NK1 
@@ -111,7 +110,6 @@ NK3_nazvy_cis<-NK3
 # vystup: NK1 (list listu)
 #-----
 
-setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/")
 
 #vytvoreni podadresare kam se budou ukladat generovane ciselniky
 mainDir <- getwd()
@@ -173,29 +171,77 @@ for (cis in 1 : length(NKcis) ) {
     NK_bez_ciselniku<-rbind(NK_bez_ciselniku, NKall[NKcis[cis],])
     #NKcis[cis]<-NKcis[-cis]
     ZKcis<-c( ZKcis[0:(cis-1)], 0, ZKcis[cis:length(ZKcis) ] )
-    
-    #ulozeni ciselniku do listu
-    NK1[[cis]]<-list()
-    kod_ciselniku<- gsub("/","",as.character(NKall[NKcis[cis],3]))
-    names(NK1)[cis]<-kod_ciselniku
   }
 } #for cis
 
 names(NKall)<-zaloha_jmen_NKall
-NK_bez_ciselniku<-NK_bez_ciselniku[,3:4]
-names(NK_bez_ciselniku)<-c("kod_ciselniku", "nazev_ciselniku")
-#chybejici_ciselniky<-sort(unique(as.vector(NK_bez_ciselniku[,2])))
+chybejici_ciselniky<-sort(unique(as.vector(NK_bez_ciselniku[,4])))
 
 #ulozeni tabulky NK kodu bez ciselniku
 write.table(NK_bez_ciselniku, file = paste("./prehledove_tabulky/", "NK_kody_s_prazdnym_ciselnikem", ".txt", sep = ""), sep=";", col.names = T, row.names=F, qmethod = "double") 
-#write.table(chybejici_ciselniky, file = paste("./prehledove_tabulky/", "nazvy_ciselnikuu_s_prazdnym_ciselnikem_unikatni", ".txt", sep = ""), sep=";", col.names = F, row.names=F, qmethod = "double") 
-NK1_ciselniky<-NK1
+write.table(chybejici_ciselniky, file = paste("./prehledove_tabulky/", "nazvy_ciselnikuu_s_prazdnym_ciselnikem_unikatni", ".txt", sep = ""), sep=";", col.names = F, row.names=F, qmethod = "double") 
+
 #ok NK1
 
 # smazani pracovnich promennych z NK1:
-rm(zaloha_jmen_NKall, cis, kod_ciselniku, treti_sl, cis_ulozeni, jeden_ciselnik, nazev_ciselniku, NKcis, ZKcis, ZZKcis, subDir, mainDir, list)
+rm(zaloha_jmen_NKall, cis, kod_ciselniku, treti_sl, cis_ulozeni, jeden_ciselnik, nazev_ciselniku, NKcis, ZKcis, ZZKcis, subDir, mainDir)
 
 
+
+
+#============================================================================
+# NK4 
+# seznam zcela shodnych ciselniku
+
+# pokud neni zadny shodny ciselnik k hledanemu ciselniku, pak NK4[[cis]] je  nula.
+#
+# hlavicky listu: ~~nazvy ciselniku
+# vstup: NK1
+# vystup: NK4 (list vektoru)
+#-----
+
+NK4vse<-list() #assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
+
+for (cis in 1:(length(NK1)-1) ) {
+  list_cis<-0
+  for (listy in (cis+1):length(NK1)) {
+    if (cis!=listy && all (!is.na (match(NK1[[cis]][,2], NK1[[listy]][,2]))) && all(!is.na (match(NK1[[listy]][,2], NK1[[cis]][,2]))) ) {
+      list_cis <- c(list_cis, names(NK1)[listy])
+    }
+  }
+  NK4vse[[cis]] <-list_cis 
+  
+}
+names(NK4vse)<-names(NK1[1:(length(NK1)-1)])
+
+
+#---
+#vyber jen ciselniku s vyskytem alespon 1 dalsiho zcela shodneho ciselniku
+#lapply(NK4, function(x) if (match(x,0)==1) {x<-5})
+NK4<-NK4vse
+nazvy_ciselniku_NK4<-c()
+for (cis in 1:length(NK4vse)) {
+  if (all(NK4[[(length(NK4vse))-cis+1]]==0)) { #kdyz ciselnik nema zadnou shodu, je smazan z vypisu NK4
+    NK4[[(length(NK4vse))-cis+1]]<-NULL
+  }else{ #pokud je aspon jeden shodny ciselnik, vymaze pomocnou nulu na prvnim miste listu a ponecha jen nazvy shodnych ciselniku
+    NK4[[(length(NK4vse))-cis+1]] <- NK4[[(length(NK4vse))-cis+1]][-1]
+    nazvy_ciselniku_NK4<-c(nazvy_ciselniku_NK4, names(NK4[(length(NK4vse))-cis+1]), unlist(NK4[(length(NK4vse))-cis+1]) )
+  }
+}
+#tabulka nazvu ciselniku se shodou
+porovnavaci_nazvy_NK3<-gsub("/","",NK3[,1])
+if (length(nazvy_ciselniku_NK4)>0) {
+  nazvy_ciselniku_NK4<-unique(nazvy_ciselniku_NK4)
+  nazvy_ciselniku_NK4<-cbind(nazvy_ciselniku_NK4, rep(1,length(nazvy_ciselniku_NK4)))
+  for (naz in 1:nrow(nazvy_ciselniku_NK4) ) {
+    if (nchar(nazvy_ciselniku_NK4[naz,1])>0) {
+      nazvy_ciselniku_NK4[naz,2]<- as.character( NK3[(which(porovnavaci_nazvy_NK3==nazvy_ciselniku_NK4[naz,1])) , 2])
+    }
+  }
+}
+#ok NK4
+
+rm(list, list_cis, listy, naz, porovnavaci_nazvy_NK3)
 
 #=============================================================================================================
 # NK2
@@ -791,102 +837,21 @@ for (cis in 1:nrow(NKB)) { #prace po radcich K koduu
 
 }#for cis NK2
 names(NK2)<-NKB$kod_ciselniku
-NK2_kody_otazek<-NK2
 #ok NK2
 
 ### vypis chyb:
-# NK_cis_chyba_kody_K
+#  NK_cis_chyba_kody_K
 write.table(NK_cis_chyba_kody_K, file = "/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/prehledove_tabulky/chyby_kody_K.txt", sep=";", col.names = T, row.names=F, qmethod = "double") 
 ### vypis kontrolni tabulky NK2
 # NK2tab
-write.table(NK2tab, file = "/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/prehledove_tabulky/prehled_rozkladu_kodu_K.txt", sep=";", col.names = T, row.names=F, qmethod = "double") 
+write.table(NK2tab, file = "/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/prehledove_tabulky/NK2tab.txt", sep=";", col.names = T, row.names=F, qmethod = "double") 
+# NK3
+write.table(NK3, file = "/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/prehledove_tabulky/NK3.txt", sep=";", col.names = T, row.names=F, qmethod = "double") 
 
 
 # NK2 mazani nearchivovanych promennych ------------------------------------
 
-rm (bez_v,chyba_ret,chyba_skala,chyba_skala_nevim,chyba_uvnitr_kodu, ciselnik, cis, dot,DOTAZNIK,dotazniky,finkody_K_cisla,finkody_K_lower, finkody_K_upper,finpodot, ind_mnozeni_otazky, ipodotmnoz, iusekypred,j, kody_K, kody_K_cisla, kody_K_lower, kody_K_upper, komb_DOTAZNIK, komb_OTAZKA, koncovy_zaklad_ot, kontrola_znaku_finkody, kontrola_znaku_kody_K, K_po_retezcich, list, list_K, m, male_pis, mnozeni_otazky, moznosti, nadejny_pahyl, nadej_pahyl_ret, notUpperInd, orez_2, OTAZKA, otazky, otazkyDB, otazky_moznosti,pahyl_otazek, pocet_orez_2, pocet_pomlcek, pocet_prv_pah, pocet_useku, pocet_zn_odriznuti, pocet_zn_odriznuti_kon, podot, podotmnoz, podotus, pom_ind_ret, pompodotmnoz, pomusekypred, posledni_znaky_ot, posledni_znaky_ot_kon, posl_moznost, pra_ret, prvky_skal, prvni_moznost, punct, punct_pattern, ret, ret_mnozeni_otazky, skala, skala_cisla, skala_pis, skala_rim, typ_orez_2,typy_skal, typy_zackon, u, upred, upredpodot, us, usek_pred, usek_s_malym, useky_mezi_carkami, useky_ok, usekypred, useky_predb_ok, velke_pis, velke_V, vel_pis_ret, v_ind, w, zackon, zaklad_ot, znak_za_v )
-
-
-
-#============================================================================
-# NK4 
-# seznam zcela shodnych ciselniku
-
-# pokud neni zadny shodny ciselnik k hledanemu ciselniku, pak NK4[[cis]] je  nula.
-#
-# hlavicky listu: ~~nazvy ciselniku
-# vstup: NK1
-# vystup: NK4 (list vektoru)
-#-----
-
-NK4vse<-list() #assign("list", NULL, envir = .GlobalEnv) #prazdny list nazacatku
-
-for (cis in 1:(length(NK1)-1) ) { # prochazi se jen horni trojuhelnik matice shod
-  list_cis<-0
-  for (listy in (cis+1):length(NK1)) {
-    if (! (length(NK1[[cis]]) == 0 || length(NK1[[listy]]) == 0 ) ) { #nejedna se o prazdny ciselnik
-      if (cis!=listy && all (!is.na (match(NK1[[cis]][,2], NK1[[listy]][,2]))) && all(!is.na (match(NK1[[listy]][,2], NK1[[cis]][,2]))) ) {
-        list_cis <- c(list_cis, names(NK1)[listy])
-      }
-    }
-  }
-  NK4vse[[cis]] <-list_cis 
-  
-}
-names(NK4vse)<-names(NK1[1:(length(NK1)-1)])
-
-
-#---
-#vyber jen ciselniku s vyskytem alespon 1 dalsiho zcela shodneho ciselniku
-#lapply(NK4, function(x) if (match(x,0)==1) {x<-5})
-NK4<-NK4vse
-nazvy_ciselniku_NK4<-c()
-for (cis in 1:length(NK4vse)) {
-  if (all(NK4[[(length(NK4vse))-cis+1]]==0)) { #kdyz ciselnik nema zadnou shodu, je smazan z vypisu NK4
-    NK4[[(length(NK4vse))-cis+1]]<-NULL
-  }else{ #pokud je aspon jeden shodny ciselnik, vymaze pomocnou nulu na prvnim miste listu a ponecha jen nazvy shodnych ciselniku
-    NK4[[(length(NK4vse))-cis+1]] <- NK4[[(length(NK4vse))-cis+1]][-1]
-    nazvy_ciselniku_NK4<-c(nazvy_ciselniku_NK4, names(NK4[(length(NK4vse))-cis+1]), unlist(NK4[(length(NK4vse))-cis+1]) )
-  }
-}
-#tabulka nazvu ciselniku se shodou
-porovnavaci_nazvy_NK3<-gsub("/","",NK3[,1])
-if (length(nazvy_ciselniku_NK4)>0) {
-  nazvy_ciselniku_NK4<-unique(nazvy_ciselniku_NK4)
-  nazvy_ciselniku_NK4<-cbind(nazvy_ciselniku_NK4, rep(1,length(nazvy_ciselniku_NK4)))
-  for (naz in 1:nrow(nazvy_ciselniku_NK4) ) {
-    if (nchar(nazvy_ciselniku_NK4[naz,1])>0) {
-      nazvy_ciselniku_NK4[naz,2]<- as.character( NK3[(which(porovnavaci_nazvy_NK3==nazvy_ciselniku_NK4[naz,1])) , 2])
-    }
-  }
-}
-#ok NK4
-
-
-#unikatni skupiny shodnych ciselniku
-a<-NK4
-
-smazano=0
-for (unik in 1:length(a)) {
-    posl_unik=length(NK4)+1-unik
-    for (porov in 1: posl_unik-1) {
-      posl_porov=posl_unik -1 +1-porov
-      
-      if (smazano==0 && is.element(names(a[posl_unik]),unlist(a[posl_porov]))) {
-        if (all(is.element(as.vector(unlist(a[posl_unik])),as.vector(unlist(a[posl_porov]))))) {
-          a<-a[-posl_unik]
-          smazano=1
-        }
-      }    
-    }
-    smazano=0
-}
-
-NK4unik<-a
-
-
-#mazani pomocnych promennych NK4
-rm(cis, list_cis, listy, naz, porovnavaci_nazvy_NK3, a, posl_porov, posl_unik, smazano, porov, unik)
+rm (bez_v,chyba_ret,chyba_skala,chyba_skala_nevim,chyba_uvnitr_kodu, ciselnik, cis, dot,DOTAZNIK,dotazniky,finkody_K_cisla,finkody_K_lower, finkody_K_upper,finpodot, ind_mnozeni_otazky, ipodotmnoz, iusekypred,j, kody_K, kody_K_cisla, kody_K_lower, kody_K_upper, komb_DOTAZNIK, komb_OTAZKA, koncovy_zaklad_ot, kontrola_znaku_finkody, kontrola_znaku_kody_K, K_po_retezcich, list, list_K, m, male_pis, mnozeni_otazky, moznosti, nadejny_pahyl, nadej_pahyl_ret, notUpperInd, orez_2, OTAZKA, otazky, otazkyDB, otazky_moznosti,pahyl_otazek, pocet_orez_2, pocet_pomlcek, pocet_prv_pah, pocet_useku, pocet_zn_odriznuti, pocet_zn_odriznuti_kon, podot, podotmnoz, podotus, pom_ind_ret, pompodotmnoz, pomusekypred, posledni_znaky_ot, posledni_znaky_ot_kon, posl_moznost, pra_ret, prvni_moznost, punct, punct_pattern, ret, ret_mnozeni_otazky, skala, typ_orez_2,typy_skal, typy_zackon, u, upred, upredpodot, us, usek_pred, usek_s_malym, useky_mezi_carkami, useky_ok, usekypred, useky_predb_ok, velke_pis, velke_V, vel_pis_ret, v_ind, w, zackon, zaklad_ot, znak_za_v )
 
 
 #---------------------------------------------------------------------------
@@ -896,7 +861,7 @@ rm(cis, list_cis, listy, naz, porovnavaci_nazvy_NK3, a, posl_porov, posl_unik, s
 
 #pripadne ulozeni a znovunacteni vyslednych promennych:
 setwd("/home/kalabava/sya/60_Elspac/03_dokumenty_k_Elspacu/07_sjednoceni_kodovniku/03_output_data/RData_output/")
-save(NK1_ciselniky, NK2_kody_otazek, NK3_nazvy_cis, NK4, NK4unik, NK4vse, NKall, NKB, NK_bez_ciselniku, NK_cis_chyba_kody_K, seznam_dotazniku, file = "NK1234.RData")
+save(NK1, NK2, NK3, NK4, file = "NK1234.RData")
 #   load("NK1234.RData")
 # ok
 
